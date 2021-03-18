@@ -416,14 +416,14 @@ i {
      100%   { background: transparent;}
   }
 @keyframes MozBeforeBgSwap {   
-     0%   { background: bottom center;background-size: cover;opacity:0;}
-     50%  { background: top left;background-size: cover;opacity:1;}
-     100%   { background: bottom center;background-size: cover;opacity:0;}
+     0%   { background: url("../img/hero/DSCF2049.jpg" bottom center;background-size: cover;opacity:0;}
+     50%  { background: url("../img/hero/DSCF2049.jpg" top left;background-size: cover;opacity:1;}
+     100%   { background: url("../img/hero/DSCF2049.jpg" bottom center;background-size: cover;opacity:0;}
   }
 @keyframes MozAfterBgSwap {   
-     0%   { background: bottom center;background-size: cover;}
-     50%  { background: top left;background-size: cover;}
-     100%   { background: bottom center;background-size: cover;}
+     0%   { background: url("../img/hero/perales.JPG") bottom center;background-size: cover;}
+     50%  { background: url("../img/hero/perales.JPG") top left;background-size: cover;}
+     100%   { background: url("../img/hero/perales.JPG") bottom center;background-size: cover;}
   }
 
 #hero .hero-container {
