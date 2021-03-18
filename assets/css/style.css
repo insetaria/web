@@ -382,7 +382,7 @@ i {
   position: relative;
   animation: BgSwap 20s ease-in-out alternate-reverse infinite;
   -moz-animation: MozBgSwap 20s ease-in-out alternate-reverse infinite;
-  z-index:3;
+  z-index:1;
 }
 #hero::before {
   content: "";
@@ -392,7 +392,7 @@ i {
   background: url("../img/hero/DSCF2049.jpg") bottom center;
   background-size: cover;
   -moz-animation: MozBeforeBgSwap 20s ease-in-out alternate-reverse infinite;
-  z-index:2;
+  z-index:-2;
 }
 #hero::after {
   content: "";
@@ -402,7 +402,7 @@ i {
   background: url("../img/hero/perales.JPG") bottom center;
   background-size: cover;
   -moz-animation: MozAfterBgSwap 20s ease-in-out alternate-reverse infinite;
-  z-index:1;
+  z-index:-3;
 }
 
 @keyframes BgSwap {   
