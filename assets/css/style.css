@@ -417,27 +417,27 @@ i {
   }
 @keyframes MozBeforeBgSwap {   
      0%   { 
-       background: url("../img/hero/DSCF2049.jpg" bottom center;
+       background-position: bottom center;
        opacity:0;
          }
      50%  { 
-       background: url("../img/hero/DSCF2049.jpg" top left;
+       background-position: top left;
        opacity: 1;
          }
      100%   { 
-       background: url("../img/hero/DSCF2049.jpg" bottom center;
+       background-position: bottom center;
        opacity: 0;
          }
   }
 @keyframes MozAfterBgSwap {   
      0%   { 
-       background: url("../img/hero/perales.JPG") bottom center;
+       background-position: bottom center;
      }
      50%  { 
-       background: url("../img/hero/perales.JPG") top left;
+       background-position: top left;
      }
      100%   { 
-       background: url("../img/hero/perales.JPG") bottom center;
+       background-position: bottom center;
      }
   }
 
