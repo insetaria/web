@@ -389,7 +389,6 @@ i {
   height: 100vh;
   background: url("../img/hero/DSCF2049.jpg") bottom center;
   background-size: cover;
-  position: relative;
   -moz-animation: MozBeforeBgSwap 20s ease-in-out alternate-reverse infinite;
   z-index:2;
 }
@@ -398,7 +397,6 @@ i {
   height: 100vh;
   background: url("../img/hero/perales.JPG") bottom center;
   background-size: cover;
-  position: relative;
   -moz-animation: MozAfterBgSwap 20s ease-in-out alternate-reverse infinite;
   z-index:1;
 }
