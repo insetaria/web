@@ -383,7 +383,7 @@ i {
   animation: BgSwap 20s ease-in-out alternate-reverse infinite;
   -moz-animation: MozBgSwap 20s ease-in-out alternate-reverse infinite;
 }
-hero:before {
+hero::before {
   width: 100%;
   height: 100vh;
   background: url("../img/hero/DSCF2049.jpg") bottom center;
@@ -392,7 +392,7 @@ hero:before {
   -moz-animation: MozBeforeBgSwap 20s ease-in-out alternate-reverse infinite;
   z-index:-1;
 }
-hero:after {
+hero::after {
   width: 100%;
   height: 100vh;
   background: url("../img/hero/perales.JPG") bottom center;
