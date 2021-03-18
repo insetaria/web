@@ -380,6 +380,9 @@ i {
   background: url("../img/hero/DSCF2049.jpg") bottom center;
   background-size: cover;
   position: relative;
+  -webkit-animation: BgSwap 20s ease-in-out alternate-reverse infinite;
+  -moz-animation: BgSwap 20s ease-in-out alternate-reverse infinite;
+  -o-animation: BgSwap 20s ease-in-out alternate-reverse infinite;
   animation: BgSwap 20s ease-in-out alternate-reverse infinite;
 }
 @keyframes BgSwap {   
