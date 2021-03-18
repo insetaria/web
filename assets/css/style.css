@@ -411,6 +411,36 @@ i {
      100%   { background: url("../img/hero/DSCF2049.jpg") bottom center;background-size: cover;}
   }
 
+@keyframes MozBgSwap {   
+     0%   { background: transparent;}
+     100%   { background: transparent;}
+  }
+@keyframes MozBeforeBgSwap {   
+     0%   { 
+       background: url("../img/hero/DSCF2049.jpg" bottom center;
+       opacity:0;
+         }
+     50%  { 
+       background: url("../img/hero/DSCF2049.jpg" top left;
+       opacity: 1;
+         }
+     100%   { 
+       background: url("../img/hero/DSCF2049.jpg" bottom center;
+       opacity: 0;
+         }
+  }
+@keyframes MozAfterBgSwap {   
+     0%   { 
+       background: url("../img/hero/perales.JPG") bottom center;
+     }
+     50%  { 
+       background: url("../img/hero/perales.JPG") top left;
+     }
+     100%   { 
+       background: url("../img/hero/perales.JPG") bottom center;
+     }
+  }
+
 
 #hero .hero-container {
   position: absolute;
