@@ -395,7 +395,6 @@ i {
   z-index:-2;
 }
 #hero::after {
-  content: "";
   position: absolute;
   width: 100%;
   height: 100vh;
@@ -419,25 +418,31 @@ i {
      0%   { 
        background-position: bottom center;
        opacity:1;
+       content: "";
          }
      50%  { 
        background-position: top left;
        opacity: 0;
+       content: "";
          }
      100%   { 
        background-position: bottom center;
        opacity: 1;
+       content: "";
          }
   }
 @keyframes MozAfterBgSwap {   
      0%   { 
        background-position: bottom center;
+       content: "";
      }
      50%  { 
        background-position: top left;
+       content: "";
      }
      100%   { 
        background-position: bottom center;
+       content: "";
      }
   }
 
