@@ -883,8 +883,8 @@ box-shadow: 0px 0px 17px 5px rgba(240,224,141,0.58);}
   background: #fff;
   cursor: pointer;
   transition: 0.4s;
+  height:100%;
 }
-
 
 .services .icon-box {
   padding: 30px;
@@ -895,6 +895,7 @@ box-shadow: 0px 0px 17px 5px rgba(240,224,141,0.58);}
   transition: all 0.3s ease-in-out;
   text-align: center;
   border: 1px solid #fff;
+  height:100%;
 }
 
 .services .icon {
