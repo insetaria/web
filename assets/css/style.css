@@ -1332,6 +1332,32 @@ color: #2AD7A8;
 }
 
 --------------------------------------------------------------*/
+
+.container-p {
+  width: 100%;
+  padding-right: 15px;
+  padding-left: 15px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+@media (min-width: 576px){
+.container-p{
+  max-width: 75%;
+}}
+@media (min-width: 768px){
+  .container-p{
+    max-width: 75%;
+  }}
+@media (min-width: 992px){
+.container-p{
+  max-width: 66%;
+}}
+@media (min-width: 1200px){
+  .container-p{
+    max-width: 66%;
+  }}
+
 .vbox-title {
     width: 100%;
     height: auto;
