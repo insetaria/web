@@ -1380,6 +1380,14 @@ position: relative;
 overflow: visible ;
 }
 
+.productos-wrap img{
+    transition: 1s;
+}
+
+.productos-item:hover img{
+    transform: scale(1.1);
+}
+
 .portfolio-links {
 left: 20px;
 right: 20px;
