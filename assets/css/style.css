@@ -1410,7 +1410,7 @@ color: #2f4d5a;
 position: relative;
 padding-bottom: 10px;
 }
-.portfolio-info h4::after {
+.portfolio-info .inf::after {
 content: '';
 position: absolute;
 display: block;
