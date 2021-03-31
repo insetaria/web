@@ -1384,7 +1384,7 @@ overflow: hidden;
     transition: 1s;
 }
 
-.portfolio-wrap:hover img{
+.portfolio-item:hover .portfolio-wrap img{
     transform: scale(1.2);
 }
 
@@ -1399,13 +1399,11 @@ max-height: 115px;
 overflow: visible;
 transition: all 0.5s ease-in-out;
 }
-.portfolio-info img {
-overflow: visible;
-}
 .portfolio-links .portfolio-info {
 max-height: 300px;
+text-align: center;
 }
-.portfolio-wrap h4 {
+.portfolio-info h4 {
 font-weight: 700;
 margin-bottom: 10px;
 font-size: 16px;
@@ -1413,7 +1411,7 @@ color: #2f4d5a;
 position: relative;
 padding-bottom: 10px;
 }
-.portfolio-wrap h4::after {
+.portfolio-info h4::after {
 content: '';
 position: absolute;
 display: block;
@@ -1423,7 +1421,7 @@ background: #b1cbd7;
 bottom: 0;
 left: calc(50% - 25px);
 }
-.portfolio-wrap span {
+.portfolio-info span {
 font-style: italic;
 display: block;
 font-size: 13px;
