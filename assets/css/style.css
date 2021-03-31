@@ -1405,11 +1405,17 @@ text-align: center;
 .portfolio-info h4 {
 font-weight: 700;
 margin-bottom: 10px;
-font-size: 16px;
+font-size: 19px;
 color: #2f4d5a;
 position: relative;
+padding-bottom: 0px;
+}
+
+.inf {
+font-size: 16px!important;
 padding-bottom: 10px;
 }
+
 .portfolio-info .inf::after {
 content: '';
 position: absolute;
