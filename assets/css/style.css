@@ -1413,7 +1413,8 @@ padding-bottom: 0px;
 
 .inf {
 font-size: 16px!important;
-padding-bottom: 10px;
+padding-bottom: 10px!important;
+font-weight: 600!important;
 }
 
 .portfolio-info .inf::after {
