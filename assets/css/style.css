@@ -592,9 +592,10 @@ section {
     width: 150px;
     height: 150px;
     background: #E5FAF4;
-    padding-top: 58px;
+    padding-top: 55px;
     align-self: center;
     margin-top: 20px;
+    font-size: 1.5rem;
 }
 
 .about .content p {
