@@ -592,10 +592,21 @@ section {
     width: 150px;
     height: 150px;
     background: #E5FAF4;
-    padding-top: 55px;
+    padding-top: 36px;
     align-self: center;
     margin-top: 20px;
+    font-size: 4.5rem;
+    border-left: 1px solid black;
+}
+.about .circle-title {
+    align-self: center;
+    margin-top: 10px;
     font-size: 1.5rem;
+    text-decoration: underline;
+}
+
+.about:hover {
+
 }
 
 .about .content p {
