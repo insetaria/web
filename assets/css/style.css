@@ -1396,7 +1396,7 @@ overflow: hidden;
     transition: 1s;
 }
 
-.portfolio-item:hover .portfolio-wrap img{
+.product-frame:hover .portfolio-wrap img{
     transform: scale(1.2);
 }
 
