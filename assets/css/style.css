@@ -1621,6 +1621,12 @@ font-size: 13px;
 /*--------------------------------------------------------------
 # Contact Me
 --------------------------------------------------------------*/
+#contact {
+background: url(https://biologo.com.br/bio/wp-content/uploads/2018/05/besouros-variedade.jpg) bottom center no-repeat;
+background-size: cover;
+background-attachment: fixed;
+}
+
 .contact .info-box {
   color: #444444;
   text-align: center;
