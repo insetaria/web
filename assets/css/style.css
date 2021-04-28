@@ -384,6 +384,16 @@ i {
   background: url(../img/hero/DSCF2049.jpg) bottom center;
   background-size: cover;
 }
+#hero::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: rgba(14, 16, 17, 0.4);
+}
+
 /* código para cambiar las imágenes del hero
 #hero::before {
   content: "";
@@ -1625,6 +1635,7 @@ font-size: 13px;
 background: url(https://biologo.com.br/bio/wp-content/uploads/2018/05/besouros-variedade.jpg) bottom center no-repeat;
 background-size: cover;
 background-attachment: fixed;
+position: relative;
 }
 
 #contact::before {
