@@ -12,6 +12,7 @@
   });
 */
 
+  /*
   jQuery(document).ready(function () {
       titleCameBack();
   });
@@ -33,7 +34,7 @@
           });
       });
   }
-  
+  */
   
  //Cerrar modal
   $('.cerrarmodal').click(cambiarClase);
