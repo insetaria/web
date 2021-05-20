@@ -42,6 +42,8 @@ function cambiarClase()
 {
     $("#Modal1").css("display", "none");
 }
+  
+/*
  
 //mostrar / ocultar servicios
   $('.show-services').click(showServices);
@@ -179,6 +181,8 @@ function ShowDesc5()
     $(".Desc4").css("display", "none");
     $(".Desc5").css("display", "block");
 }  
+
+*/
   
 /* 
 //Cambiar imagen background
