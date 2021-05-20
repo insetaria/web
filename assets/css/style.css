@@ -1632,7 +1632,7 @@ font-size: 13px;
 # Contact Me
 --------------------------------------------------------------*/
 #contact {
-background: url(../../assets/img/coleccion.jpg) bottom center no-repeat;
+background: url(../../assets/img/coleccion.jpg) top center no-repeat;
 background-size: cover;
 background-attachment: fixed;
 position: relative;
