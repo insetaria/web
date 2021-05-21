@@ -44,7 +44,7 @@ function cambiarClase()
     $("#Modal1").css("display", "none");
 }
   
-/*
+
  
 //mostrar / ocultar servicios
   $('.show-services').click(showServices);
@@ -63,6 +63,8 @@ function hideServices()
     $(".hiddenServices, .hide-services").css("display", "none");
     $(".show-services").fadeIn('slow');
 }
+  
+  /*
  
  $('#S1bg').click(service1); 
   
