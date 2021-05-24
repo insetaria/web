@@ -1,5 +1,5 @@
 window.onload = function() {
-  document.title = Insectaria;
+  document.title = 'Insectaria';
 };
 
 !(function($) {
