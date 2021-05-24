@@ -1,13 +1,32 @@
 .arr::after {
-content:"";
-position: absolute;
-left: 0;
-right: 0;
-top: 0;
-bottom: 0;
-border-right:1px solid black;
-border-bottom:1px solid black;
-transform: rotate(45deg);
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    right: 0;
+    top: 90px;
+    bottom: 0;
+    border-right: 1px solid black;
+    border-bottom: 1px solid black;
+    transform: rotate(315deg);
+}
+@media (max-width: 992px) {
+  .arr::after {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: auto;
+    left: 48%;
+    bottom: -10px;
+    border-right: 1px solid black;
+    border-bottom: 1px solid black;
+    transform: rotate(45deg);
+}
+  .arr{
+  margin-bottom: 20px;
+  }
+  
 }
 /*--------------------------------------------------------------
 # General
