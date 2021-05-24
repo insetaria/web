@@ -18,13 +18,13 @@
     height: 20px;
     top: auto;
     left: 48%;
-    bottom: -10px;
+    bottom: -20px;
     border-right: 1px solid black;
     border-bottom: 1px solid black;
     transform: rotate(45deg);
 }
   .arr{
-  margin-bottom: 20px;
+  margin-bottom: 40px;
   }
   
 }
