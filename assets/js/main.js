@@ -1,3 +1,6 @@
+window.onload = function() {
+  document.title = Insectaria;
+};
 
 !(function($) {
   "use strict";
