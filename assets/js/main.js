@@ -1,5 +1,16 @@
 window.onload = function() {
   document.title = 'Insectaria';
+  
+  //Desactiva cut copy paste
+  $('body').bind('cut copy paste', function (e) {
+      e.preventDefault();
+  });
+   
+  //Desactiva click derecho
+  $("body").on("contextmenu",function(e){
+      return false;
+  });
+
 };
 
 !(function($) {
