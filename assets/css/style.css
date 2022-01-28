@@ -25,6 +25,10 @@
 body {
   font-family: "Open Sans", sans-serif;
   color: #444444;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none; 
 }
 
 a {
