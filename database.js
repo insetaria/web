@@ -237,7 +237,7 @@ window.appData = {
       "name": "Adalia bipunctata",
       "state": "Adulto",
       "description": "Depredador de pulgones",
-      "image": "assets/img/portfolio/Adalia-bipunctata-adulto-Retocada.jpg",
+      "image": "assets/img/portfolio/Adalia-bipunctata-adulto-retocada.jpg",
       "modal": false,
       "price": "",
       "sheet": ""
@@ -321,7 +321,7 @@ window.appData = {
     {
       "enabled": "15/01/2026",
       "title": "TRAPVID",
-      "description": "Monitoreo automatizado de la pollilla del racimo"
+      "description": "Monitoreo automatizado de la pollilla del racimo de la vid"
     },
     {
       "enabled": "15/01/2026",
