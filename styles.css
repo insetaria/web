@@ -282,36 +282,6 @@ a.nolink {
     padding: 1rem;
     z-index: 2;
 }
-.service-card>.card {
-    position: relative;
-    overflow: hidden;
-    align-items: stretch;
-}
-.service-card>.card::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image: var(--hover-bg);
-    background-size: cover;
-    background-position: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: 0;
-}
-.service-card>.card:hover::before {
-    opacity: 1;
-}
-.service-card>.card::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: rgba(255, 255, 255, 0.7);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-.service-card>.card:hover::after {
-    opacity: 1;
-}
 .service-card>.card .service-info {
     position: relative;
     z-index: 1;
@@ -426,8 +396,28 @@ a.nolink {
     width: calc(100% / 3);
     padding: 1rem;
 }
-.idi-card>.card {
+.idi-card .card {
     padding: 1rem;
+    border-radius: 1rem;
+}
+
+.idi-card .card > p > span {
+    text-decoration: underline;
+    cursor: pointer;
+    color: #2AD7A8;
+}
+.idi-item-image {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-bottom: 0.5rem;
+    border: 3px solid #dfdfdf;
+}
+.idi-info > p > span, a {
+    text-decoration: underline;
+    cursor: pointer;
+    color: #2AD7A8;
 }
 #contact{
     padding-top: 5rem;
@@ -551,6 +541,57 @@ h2.text-shadow {
     pointer-events: none;
     z-index: -1;
 }
+.trigger-button {
+    font-weight: bold;
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+}
+.modal-image{
+    max-width: 50%;
+}
+
+
+.hover-bg{
+    position: relative;
+    z-index: 2;
+}
+.hover-bg .card {
+    position: relative;
+    overflow: hidden;
+    align-items: stretch;
+}
+.hover-bg .card > * {
+    position: relative;
+    z-index: 2;
+}
+.hover-bg .card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: var(--hover-bg);
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 0;
+}
+.hover-bg .card:hover::before {
+    opacity: 1;
+}
+.hover-bg .card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.7);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.hover-bg .card:hover::after {
+    opacity: 1;
+}
+
 @media (max-width: 1200px) {
     .menu-group{
         padding: 1rem;
@@ -626,6 +667,9 @@ h2.text-shadow {
     }
     .methodology-content > div:last-child::after {
         content: none;
+    }
+    .modal-image{
+        max-width: 100%;
     }
 }
 @media (max-width: 290px) {

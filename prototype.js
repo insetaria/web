@@ -174,7 +174,14 @@ function parseData(menu, sections, services, predators, methodology, projects, i
             .map(x => ({
                 enabled: x["Habilitado"],
                 title: x["Título"],
-                description: x["Descripción"]
+                description: x["Descripción"],
+                image: x["Imagen"],
+                background: x["Fondo"],
+                link: x["Enlace"],
+                modal: String(x["Modal"] ?? "")
+                    .trim()
+                    .toLowerCase() === "si",
+                sheet: x["Ficha"]
             })),
     };
 }

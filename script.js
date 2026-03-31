@@ -237,7 +237,7 @@ function renderServices(section) {
         <div class="container">
             <div class="grid">
                 ${database.services.map((service, index) => `
-                    <div class="service-card">
+                    <div class="service-card hover-bg">
                         <div class="card" data-index="${index}" ${service.image ? `style="--hover-bg: url('${service.image}')"` : ``}>
                             <div class="service-info">
                                 <div class="icon"><i class="${service.icon} service-icon"></i></div>
@@ -355,7 +355,7 @@ function renderPredators(section) {
                 const modalContent = `
                     <div>
                         <div class="predator-graphic-info">
-                            <img src="https://insectaria.com/${predator.image}">
+                            <img src="https://insectaria.com/${predator.image}" class="modal-image">
                             ${priceTable}
                         </div>
                         ${predator.sheet ? predator.sheet.split('\n').map(line => `<p>${line.trim()}</p>`).join(''): ''}
@@ -390,13 +390,10 @@ function renderProjects(section) {
                             </div>
                         </div>
                     `;
-
                     return `
                         <div class="project-card">
                             ${hasLink 
-                                ? `<a href="${project.link}" target="_blank" rel="noopener noreferrer" class="nolink">
-                                     ${cardContent}
-                                   </a>` 
+                                ? `<a href="${project.link}" target="_blank" rel="noopener noreferrer" class="nolink">${cardContent}</a>` 
                                 : cardContent
                             }
                         </div>
@@ -409,35 +406,132 @@ function renderProjects(section) {
     if (!document.getElementById('projects')) {
         document.body.append(projectsSection);
     }
-}
 
-function renderIdi(section){
-    const idiSection = document.getElementById('idi') || document.createElement('section');
-    idiSection.id = 'idi';
-    idiSection.role= 'contentinfo';
-    idiSection.innerHTML = `
-            <div class="container">
-                <div>
-                    <h2 class="text-shadow"">${section.title}</h2>
-                    <p>${section.text}</p>
-                </div>
-                <div class="grid">
-                    ${database.idi.map(idi => `
-                        <div class="idi-card">
-                            <div class="card">
-                                <div class="idi-info">
-                                    <h3>${idi.title}</h3>
-                                    <p>${idi.description}</p>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}  
-                </div>
+    const projectCards = projectsSection.querySelectorAll('.project-card');
+    let isExpanded = false;
+
+    const updateProjectVisibility = (showAll) => {
+        projectCards.forEach((card, index) => {
+            card.style.display = (showAll || index < 3) ? 'block' : 'none';
+        });
+        const triggerButton = document.getElementById('projects-trigger');
+        if (triggerButton) {
+            triggerButton.textContent = showAll ? section.subtitle || "Mostrar menos" : section.title || "Mostrar más";
+        }
+        isExpanded = showAll;
+    };
+
+    if (database.projects.length > 3) {
+        const container = projectsSection.querySelector('.container');
+        const triggerHTML = `
+            <div id="projects-trigger-container" style="text-align:center; margin-top:1rem;">
+                <div id="projects-trigger" class="trigger-button card" style="cursor:pointer;">${section.title}</div>
             </div>
         `;
-    if (!document.getElementById('idi')) {
-        document.body.append(idiSection);
+        container.insertAdjacentHTML('beforeend', triggerHTML);
+
+        updateProjectVisibility(false);
+
+        const triggerButton = document.getElementById('projects-trigger');
+        triggerButton.addEventListener('click', () => {
+            updateProjectVisibility(!isExpanded);
+            if (!isExpanded) {
+                const target = document.getElementById('projects');
+                if (target) smoothScroll(target, 800);
+            }
+        });
     }
+}
+
+function renderIdi(section) {
+    let idiSection = document.getElementById('idi');
+    if (!idiSection) {
+        idiSection = document.createElement('section');
+        idiSection.id = 'idi';
+        idiSection.role = 'contentinfo';
+        document.body.appendChild(idiSection);
+    }
+
+    idiSection.innerHTML = `
+        <div class="container">
+            <div>
+                <h2 class="text-shadow">${section.title}</h2>
+                <p>${section.text}</p>
+            </div>
+            <div class="grid" id="idi-grid">
+                ${database.idi.map((idi, index) => {
+                    const hasLink = idi.link && idi.link.trim() !== "";
+                    const hasModal = idi.modal && idi.sheet && idi.sheet.trim() !== "";
+
+                    const hoverBgStyle = idi.background ? `style="--hover-bg: url('${idi.background.replace(/\\/g, '/')}');"` : '';
+                    const cardInner = `
+                        <div class="card" ${hoverBgStyle}>
+                            <h3>${idi.title}</h3>
+                            ${idi.image ? `<img src="${idi.image}" class="idi-item-image">` : ''}
+                            <p>${idi.description || ''}</p>
+                            ${(hasLink && !hasModal) ? '<p>(<span>Ir al enlace</span>)</p>' : (hasLink ? `<p>(<a href="${idi.link}" target="_blank" rel="noopener noreferrer">Ir al enlace</a>)</p>` : '')}
+                        </div>
+                    `;
+
+                    return `
+                        <div class="idi-card hover-bg" data-index="${index}">
+                            ${(hasLink && !hasModal) ? `<a href="${idi.link}" target="_blank" rel="noopener noreferrer" class="nolink">${cardInner}</a>` : cardInner}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            ${database.idi.length > 3 
+                ? `<div id="idi-trigger-container" style="text-align:center; margin-top: 1rem;">
+                        <div id="idi-trigger" class="trigger-button card">Mostrar más</div>
+                   </div>` 
+                : ''}
+        </div>
+    `;
+
+    const idiCards = idiSection.querySelectorAll('.idi-card');
+    let isExpanded = false;
+
+    const updateVisibility = (showAll) => {
+        idiCards.forEach((card, index) => {
+            card.style.display = (showAll || index < 3) ? 'block' : 'none';
+        });
+        const triggerButton = document.getElementById('idi-trigger');
+        if (triggerButton) {
+            triggerButton.textContent = showAll ? "Mostrar menos" : "Mostrar más";
+        }
+        isExpanded = showAll;
+    };
+
+    if (database.idi.length > 3) {
+        updateVisibility(false);
+        const triggerButton = document.getElementById('idi-trigger');
+        triggerButton.addEventListener('click', () => {
+            updateVisibility(!isExpanded);
+            if (isExpanded) {
+                const target = document.getElementById('idi');
+                if (target) smoothScroll(target, 800);
+            }
+        });
+    }
+
+    idiCards.forEach(card => {
+        const index = parseInt(card.getAttribute('data-index'), 10);
+        const idi = database.idi[index];
+        if (idi.sheet) {
+            card.style.cursor = 'pointer';
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('a')) return;
+
+                const modalContent = `
+                    <div>
+                        ${idi.image ? `<img src="${idi.image}" class="modal-image">` : ''}
+                        ${idi.sheet.split('\n').map(line => `<p>${line.trim()}</p>`).join('')}
+                    </div>
+                `;
+                modal(idi.title, modalContent);
+            });
+        }
+    });
 }
 
 function renderContact(section) {
