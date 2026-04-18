@@ -563,6 +563,51 @@ function renderContact(section) {
     }
 }
 
+function renderCollaborators(section) {
+    if (!database.collaborators || database.collaborators.length === 0) return;
+
+    const collaboratorsSection = document.getElementById('collaborators') || document.createElement('section');
+    collaboratorsSection.id = 'collaborators';
+    collaboratorsSection.role = 'contentinfo';
+
+    collaboratorsSection.style.backgroundColor = '#ffffff';
+    collaboratorsSection.style.color = '#000000';
+
+    collaboratorsSection.innerHTML = `
+        <div class="container">
+            ${section.title ? `<h2 class="text-shadow">${section.title}</h2>` : ''}
+            <div class="collaborators-list">
+                ${database.collaborators.map(collab => `
+                    <div class="collaborator-row">
+                        ${collab.link 
+                            ? `<a href="${collab.link}" target="_blank" rel="noopener noreferrer" class="nolink">`
+                            : ''
+                        }
+                        
+                        ${collab.image 
+                            ? `<img src="${collab.image}" alt="${collab.title}" class="collaborator-logo">`
+                            : ''
+                        }
+
+                        <span class="collaborator-title">${collab.title || ''}</span>
+
+                        ${collab.description 
+                            ? `<span class="collaborator-description">${collab.description}</span>`
+                            : ''
+                        }
+
+                        ${collab.link ? `</a>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+
+    if (!document.getElementById('collaborators')) {
+        document.body.append(collaboratorsSection);
+    }
+}
+
 function renderModal() {
     if (document.getElementById('modal')) return;
     const modal = document.createElement('div');
@@ -643,6 +688,9 @@ function renderSections() {
 
     const contactData = database.sections.find(s => s.id === "#contact");
     if (contactData) renderContact(contactData);
+
+    const collaborators = database.sections.find(s => s.id === "#collaborators");
+    if (collaborators && database.collaborators) renderCollaborators(collaborators);
 
     document.querySelectorAll(".text-shadow").forEach(item => {
         applyTextShadow(item);
@@ -735,6 +783,7 @@ async function load() {
         document.head.appendChild(script);
         await waitForAppDataAndDOM();
         window.database = cleanAppData();
+        //debug(window.database);
         renderSections();
     }catch(err){
         console.error(err);

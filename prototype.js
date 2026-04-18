@@ -91,16 +91,17 @@ async function loadDataSheet() {
     const ds = await buildDataStructure();
     if(ds){
         try {
-            const [a, b, c, d, e, f, g] = await Promise.all([
+            const [a, b, c, d, e, f, g, h] = await Promise.all([
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.menu.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.sections.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.services.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.predators.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.methodology.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.projects.gid),
-                fetchGoogleSheetsCSVAsJson(ds.gid, ds.idi.gid)
+                fetchGoogleSheetsCSVAsJson(ds.gid, ds.idi.gid),
+                fetchGoogleSheetsCSVAsJson(ds.gid, ds.collaborators.gid),
             ]);
-            parseData(a, b, c, d, e, f, g);
+            parseData(a, b, c, d, e, f, g, h);
             createFloatingSaveButton(window.appData);
         } catch (e) {
             console.error("Error cargando base de datos:", e);
@@ -109,7 +110,7 @@ async function loadDataSheet() {
     document.dispatchEvent(new Event("appDataReady"));
 }
 
-function parseData(menu, sections, services, predators, methodology, projects, idi) {
+function parseData(menu, sections, services, predators, methodology, projects, idi, collaborators) {
     window.appData = {
         menu: menu
             .filter(x => isEnabled(x["Habilitado"]))
@@ -183,6 +184,15 @@ function parseData(menu, sections, services, predators, methodology, projects, i
                     .toLowerCase() === "si",
                 sheet: x["Ficha"]
             })),
+        collaborators: collaborators
+            .filter(x => isEnabled(x["Habilitado"]))
+            .map(x => ({
+                enabled: x["Habilitado"],
+                title: x["Título"],
+                image: x["Imagen"],
+                description: x["Descripción"],
+                link: x["Enlace"]
+            }))
     };
 }
 

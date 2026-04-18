@@ -432,6 +432,33 @@ a.nolink {
     margin-bottom: 2rem;
     opacity: 0.9;
 }
+.collaborators-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.collaborator-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.collaborator-logo {
+    height: 40px;
+    object-fit: contain;
+}
+
+.collaborator-title {
+    font-weight: bold;
+}
+
+.collaborator-description {
+    opacity: 0.7;
+    margin-left: auto;
+}
 #modal {
     position: fixed;
     inset: 0;
