@@ -552,7 +552,6 @@ function renderContact(section) {
                     ${section.text ? `<h3>${section.text}</h3>`: ''}
                 </div>
             </a>
-            <p>© Copyright <strong>insectaria.com</strong>. All Rights Reserved</p>
         </div>
     `;
     if (section.font) {
@@ -576,7 +575,7 @@ function renderCollaborators(section) {
     collaboratorsSection.innerHTML = `
         <div class="container">
             ${section.title ? `<h2 class="text-shadow">${section.title}</h2>` : ''}
-            ${section.text ? `<p>${section.text}</p>` : ''}
+            ${section.text ? `<p>${section.text}</p><hl/><hr>` : ''}
             <div class="collaborators-list">
                 ${database.collaborators.map(collab => `
                     <div class="collaborator-row">
