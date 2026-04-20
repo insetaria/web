@@ -544,7 +544,7 @@ function renderContact(section) {
 
     contactSection.innerHTML = `
         <div class="container">
-            <a class='nolink' ${section.link ? `href='${section.link}'`:''}>
+            <a target="_blank" class='nolink' ${section.link ? `href='${section.link}'`:''}>
                 <div class="icon"><i class="icofont-envelope"></i></div>
                 <div class="contact-content">
                     ${section.title ? `<h2>${section.title}</h2>` : ''}
@@ -575,6 +575,9 @@ function renderCollaborators(section) {
     collaboratorsSection.innerHTML = `
         <div class="container">
             ${section.title ? `<h2 class="text-shadow">${section.title}</h2>` : ''}
+            <div>
+                <img src="./assets/img/logos/logo.png" width="auto" height="35px" alt="Insectaria" title="Insectaria" style="max-height: 60px; height: auto;aspect-ratio: 6 / 1; max-width: calc(100% - 1rem);">
+            </div>
             ${section.text ? `<p>${section.text}</p><hl/><hr>` : ''}
             <div class="collaborators-list">
                 ${database.collaborators.map(collab => `
