@@ -258,7 +258,7 @@ function renderServices(section) {
 
     const cards = servicesSection.querySelectorAll('.service-card');
     
-    if (database.services.length > 4) {
+    if (database.services.length > 5) {
         const triggerContainer = servicesSection.querySelector('#services-trigger');
         const triggerLink = triggerContainer.querySelector('.trigger-button');
         
@@ -266,7 +266,7 @@ function renderServices(section) {
 
         const updateVisibility = (showAll) => {
             cards.forEach((card, index) => {
-                card.style.display = (showAll || index < 4) ? 'block' : 'none';
+                card.style.display = (showAll || index < 5) ? 'block' : 'none';
             });
             triggerLink.textContent = showAll ? section.subtitle : section.title;
             isExpanded = showAll;
@@ -570,12 +570,13 @@ function renderCollaborators(section) {
     collaboratorsSection.id = 'collaborators';
     collaboratorsSection.role = 'contentinfo';
 
-    collaboratorsSection.style.backgroundColor = '#ffffff';
-    collaboratorsSection.style.color = '#000000';
+    collaboratorsSection.style.backgroundColor = section.background;
+    collaboratorsSection.style.color = section.font;
 
     collaboratorsSection.innerHTML = `
         <div class="container">
             ${section.title ? `<h2 class="text-shadow">${section.title}</h2>` : ''}
+            ${section.text ? `<p>${section.text}</p>` : ''}
             <div class="collaborators-list">
                 ${database.collaborators.map(collab => `
                     <div class="collaborator-row">
@@ -589,10 +590,13 @@ function renderCollaborators(section) {
                             : ''
                         }
 
-                        <span class="collaborator-title">${collab.title || ''}</span>
+                        ${collab.title
+                            ? `<p class="collaborator-title">${collab.title || ''}</p>`
+                            : ''
+                        }
 
                         ${collab.description 
-                            ? `<span class="collaborator-description">${collab.description}</span>`
+                            ? `<p class="collaborator-description">${collab.description}</p>`
                             : ''
                         }
 

@@ -276,11 +276,14 @@ a.nolink {
     z-index: 1;
     pointer-events: none;
 }
+#services .grid{
+    width: calc(100% - 2rem);
+    max-width: 1400px;
+}
 .service-card{
-    box-sizing: border-box;
-    width: calc(100% / 4);
+    width: calc(100% / 5);
     padding: 1rem;
-    z-index: 2;
+    box-sizing: border-box;
 }
 .service-card>.card .service-info {
     position: relative;
@@ -440,19 +443,32 @@ a.nolink {
 
 .collaborator-row {
     display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.5rem 0;
+    align-items: flex-start;
     border-bottom: 1px solid #eee;
+    flex-direction: column;
+        line-height: .5rem;
+}
+
+.collaborator-row a{
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    margin: 0px;
+    padding: 0px;
 }
 
 .collaborator-logo {
     height: 40px;
     object-fit: contain;
+        margin-bottom: .5rem;
 }
 
 .collaborator-title {
     font-weight: bold;
+}
+
+.collaborator-row p{
+    margin-bottom: .7rem;
 }
 
 .collaborator-description {
@@ -634,12 +650,12 @@ h2.text-shadow {
         justify-content: space-between;
         cursor: pointer;
     }
+    .service-card{
+        width: 33%;
+    }
 }
 @media (max-width: 950px) {
     .methodology-entry {
-        width: 50%;
-    }
-    .service-card{
         width: 50%;
     }
     .predator-card{
@@ -653,6 +669,9 @@ h2.text-shadow {
     }
     .methodology-content > div:nth-child(2n)::after {
         content: none;
+    }
+    .service-card{
+        width: 50%;
     }
 }
 @media (max-width: 850px) {

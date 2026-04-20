@@ -182,13 +182,6 @@ window.appData = {
       "text": "Monitorización y seguimiento de artrópodos",
       "image": "assets/img/services/3.jpg",
       "icon": "icofont-search-2"
-    },
-    {
-      "enabled": "15/01/2026",
-      "title": "Identificación",
-      "text": "Identificación taxonomica de insectos y ácaros",
-      "image": "assets/img/services/5.jpg",
-      "icon": "icofont-question"
     }
   ],
   "predators": [
