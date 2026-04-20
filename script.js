@@ -562,25 +562,25 @@ function renderContact(section) {
     }
 }
 
-function renderCollaborators(section) {
-    if (!database.collaborators || database.collaborators.length === 0) return;
+function renderFooter(section) {
+    if (!database.footer || database.footer.length === 0) return;
 
-    const collaboratorsSection = document.getElementById('collaborators') || document.createElement('section');
-    collaboratorsSection.id = 'collaborators';
-    collaboratorsSection.role = 'contentinfo';
+    const footerSection = document.getElementById('footer') || document.createElement('section');
+    footerSection.id = 'footer';
+    footerSection.role = 'contentinfo';
 
-    collaboratorsSection.style.backgroundColor = section.background;
-    collaboratorsSection.style.color = section.font;
+    footerSection.style.backgroundColor = section.background;
+    footerSection.style.color = section.font;
 
-    collaboratorsSection.innerHTML = `
+    footerSection.innerHTML = `
         <div class="container">
             ${section.title ? `<h2 class="text-shadow">${section.title}</h2>` : ''}
             <div>
                 <img src="./assets/img/logos/logo.png" width="auto" height="35px" alt="Insectaria" title="Insectaria" style="max-height: 60px; height: auto;aspect-ratio: 6 / 1; max-width: calc(100% - 1rem);">
             </div>
             ${section.text ? `<p>${section.text}</p><hl/><hr>` : ''}
-            <div class="collaborators-list">
-                ${database.collaborators.map(collab => `
+            <div class="footer-list">
+                ${database.footer.map(collab => `
                     <div class="collaborator-row">
                         ${collab.link 
                             ? `<a href="${collab.link}" target="_blank" rel="noopener noreferrer" class="nolink">`
@@ -609,8 +609,8 @@ function renderCollaborators(section) {
         </div>
     `;
 
-    if (!document.getElementById('collaborators')) {
-        document.body.append(collaboratorsSection);
+    if (!document.getElementById('footer')) {
+        document.body.append(footerSection);
     }
 }
 
@@ -695,8 +695,8 @@ function renderSections() {
     const contactData = database.sections.find(s => s.id === "#contact");
     if (contactData) renderContact(contactData);
 
-    const collaborators = database.sections.find(s => s.id === "#collaborators");
-    if (collaborators && database.collaborators) renderCollaborators(collaborators);
+    const footer = database.sections.find(s => s.id === "#footer");
+    if (footer && database.footer) renderFooter(footer);
 
     document.querySelectorAll(".text-shadow").forEach(item => {
         applyTextShadow(item);

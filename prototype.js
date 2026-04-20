@@ -99,7 +99,7 @@ async function loadDataSheet() {
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.methodology.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.projects.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.idi.gid),
-                fetchGoogleSheetsCSVAsJson(ds.gid, ds.collaborators.gid),
+                fetchGoogleSheetsCSVAsJson(ds.gid, ds.footer.gid),
             ]);
             parseData(a, b, c, d, e, f, g, h);
             createFloatingSaveButton(window.appData);
@@ -110,7 +110,7 @@ async function loadDataSheet() {
     document.dispatchEvent(new Event("appDataReady"));
 }
 
-function parseData(menu, sections, services, predators, methodology, projects, idi, collaborators) {
+function parseData(menu, sections, services, predators, methodology, projects, idi, footer) {
     window.appData = {
         menu: menu
             .filter(x => isEnabled(x["Habilitado"]))
@@ -184,7 +184,7 @@ function parseData(menu, sections, services, predators, methodology, projects, i
                     .toLowerCase() === "si",
                 sheet: x["Ficha"]
             })),
-        collaborators: collaborators
+        footer: footer
             .filter(x => isEnabled(x["Habilitado"]))
             .map(x => ({
                 enabled: x["Habilitado"],

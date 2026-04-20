@@ -435,13 +435,13 @@ a.nolink {
     margin-bottom: 2rem;
     opacity: 0.9;
 }
-.collaborators-list {
+.footer-list {
     display: flex;
     flex-direction: column;
     gap: 1rem;
 }
 
-.collaborator-row {
+.footer-row {
     display: flex;
     align-items: flex-start;
     border-bottom: 1px solid #eee;
@@ -449,7 +449,7 @@ a.nolink {
         line-height: .5rem;
 }
 
-.collaborator-row a{
+.footer-row a{
     display: flex;
     align-items: flex-start;
     flex-direction: column;
@@ -457,21 +457,21 @@ a.nolink {
     padding: 0px;
 }
 
-.collaborator-logo {
+.footer-logo {
     height: 40px;
     object-fit: contain;
         margin-bottom: .5rem;
 }
 
-.collaborator-title {
+.footer-title {
     font-weight: bold;
 }
 
-.collaborator-row p{
+.footer-row p{
     margin-bottom: .7rem;
 }
 
-.collaborator-description {
+.footer-description {
     opacity: 0.7;
     margin-left: auto;
 }
