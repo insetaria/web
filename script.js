@@ -581,24 +581,24 @@ function renderFooter(section) {
             ${section.text ? `<p>${section.text}</p><hl/><hr>` : ''}
             <div class="footer-list">
                 ${database.footer.map(collab => `
-                    <div class="collaborator-row">
+                    <div class="footer-row">
                         ${collab.link 
                             ? `<a href="${collab.link}" target="_blank" rel="noopener noreferrer" class="nolink">`
                             : ''
                         }
                         
                         ${collab.image 
-                            ? `<img src="${collab.image}" alt="${collab.title}" class="collaborator-logo">`
+                            ? `<img src="${collab.image}" alt="${collab.title}" class="footer-logo">`
                             : ''
                         }
 
                         ${collab.title
-                            ? `<p class="collaborator-title">${collab.title || ''}</p>`
+                            ? `<p class="footer-title">${collab.title || ''}</p>`
                             : ''
                         }
 
                         ${collab.description 
-                            ? `<p class="collaborator-description">${collab.description}</p>`
+                            ? `<p class="footer-description">${collab.description}</p>`
                             : ''
                         }
 
