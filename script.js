@@ -227,7 +227,8 @@ function renderAbout(section) {
 function renderServices(section) {
     const servicesSection = document.getElementById('services') || document.createElement('section');
     servicesSection.id = 'services';
-    servicesSection.role= 'contentinfo';
+    servicesSection.role = 'contentinfo';
+
     if (section.background){
         servicesSection.style.backgroundImage = `url(${section.background})`;
         servicesSection.classList.add('bg');
@@ -238,7 +239,9 @@ function renderServices(section) {
             <div class="grid">
                 ${database.services.map((service, index) => `
                     <div class="service-card hover-bg">
-                        <div class="card" data-index="${index}" ${service.image ? `style="--hover-bg: url('${service.image}')"` : ``}>
+                        <div class="card ${(service.modal && service.sheet) ? 'clickable-card hover-shadow' : ''}" 
+                             data-index="${index}" 
+                             ${service.image ? `style="--hover-bg: url('${service.image}')"` : ``}>
                             <div class="service-info">
                                 <div class="icon"><i class="${service.icon} service-icon"></i></div>
                                 <h4>${service.title}</h4>
@@ -257,6 +260,29 @@ function renderServices(section) {
     `;
 
     const cards = servicesSection.querySelectorAll('.service-card');
+
+    // 👉 Añadir comportamiento modal (sin duplicar queries)
+    cards.forEach((wrapper, index) => {
+        const card = wrapper.querySelector('.card');
+        const service = database.services[index];
+
+        if (service.modal && service.sheet) {
+            card.style.cursor = 'pointer';
+
+            card.addEventListener('click', () => {
+                const modalContent = `
+                    <div>
+                        ${(service.modalImage || service.image) 
+                            ? `<img src="${service.modalImage || service.image}" class="modal-image" style="float:left;">` 
+                            : ''
+                        }
+                        ${service.sheet.split('\n').map(line => `<p>${line.trim()}</p>`).join('')}
+                    </div>
+                `;
+                modal(service.title, modalContent);
+            });
+        }
+    });
     
     if (database.services.length > 5) {
         const triggerContainer = servicesSection.querySelector('#services-trigger');
@@ -280,10 +306,8 @@ function renderServices(section) {
             e.stopPropagation(); 
 
             if (!isExpanded) {
-                // Mostrar todos (Expandir)
                 updateVisibility(true);
             } else {
-                // Mostrar menos (Colapsar)
                 updateVisibility(false);
                 setTimeout(() => {
                     if (section.link) {
@@ -386,7 +410,7 @@ function renderProjects(section) {
                             <div class="project-info">
                                 <h3>${project.title}</h3>
                                 <p>${project.description}</p>
-                                ${hasLink ? '<p>(<span>Ir al enlace</span>)</p>' : ""}
+                                ${hasLink ? '<p>(<span>Ir al artículo</span>)</p>' : ""}
                             </div>
                         </div>
                     `;
@@ -463,15 +487,18 @@ function renderIdi(section) {
                     const hasLink = idi.link && idi.link.trim() !== "";
                     const hasModal = idi.modal && idi.sheet && idi.sheet.trim() !== "";
 
-                    const hoverBgStyle = idi.background ? `style="--hover-bg: url('${idi.background.replace(/\\/g, '/')}');"` : '';
+                    const styles = ((hasLink || hasModal) && idi.background) ? `style="--hover-bg: url('${idi.background.replace(/\\/g, '/')}');"` : '';
+                    const classes = `class="card${(hasLink || hasModal) ? ' hover-shadow':''}"`;
                     const cardInner = `
-                        <div class="card" ${hoverBgStyle}>
+                        <div ${classes} ${styles}>
                             <h3>${idi.title}</h3>
                             ${idi.image ? `<img src="${idi.image}" class="idi-item-image">` : ''}
                             <p>${idi.description || ''}</p>
-                            ${(hasLink && !hasModal) ? '<p>(<span>Ir al enlace</span>)</p>' : (hasLink ? `<p>(<a href="${idi.link}" target="_blank" rel="noopener noreferrer">Ir al enlace</a>)</p>` : '')}
+                            ${(hasLink && !hasModal) ? '<p>(<span>Ir al artículo</span>)</p>' : ''}
                         </div>
                     `;
+                    //${(hasLink && !hasModal) ? '<p>(<span>Ir al enlace</span>)</p>' : (hasLink ? `<p>(<a href="${idi.link}" target="_blank" rel="noopener noreferrer">Ir al enlace</a>)</p>` : '')}
+
 
                     return `
                         <div class="idi-card hover-bg" data-index="${index}">
@@ -524,8 +551,9 @@ function renderIdi(section) {
 
                 const modalContent = `
                     <div>
-                        ${idi.image ? `<img src="${idi.image}" class="modal-image">` : ''}
+                        ${idi.image ? `<img src="${idi.image}" class="modal-image" style="float: left;">` : ''}
                         ${idi.sheet.split('\n').map(line => `<p>${line.trim()}</p>`).join('')}
+                        ${idi.link ? `<p>(<a href="${idi.link}" target="_blank" rel="noopener noreferrer">Ir al artículo</a>)</p>` : ''}
                     </div>
                 `;
                 modal(idi.title, modalContent);

@@ -146,7 +146,12 @@ function parseData(menu, sections, services, predators, methodology, projects, i
                 title: x["Título"],
                 text: x["Texto"],
                 image: x["Imagen"],
-                icon: x["Icono"]
+                icon: x["Icono"],
+                modal: String(x["Modal"] ?? "")
+                    .trim()
+                    .toLowerCase() === "si",
+                modalImage: x["ImagenModal"],
+                sheet: x["Ficha"]
             })),
         predators: predators
             .filter(x => isEnabled(x["Habilitado"]))
