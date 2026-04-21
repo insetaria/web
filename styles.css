@@ -435,6 +435,9 @@ a.nolink {
     margin-bottom: 2rem;
     opacity: 0.9;
 }
+#footer .container{
+    padding: 1rem;
+}
 .footer-list {
     display: flex;
     flex-direction: column;
@@ -446,7 +449,7 @@ a.nolink {
     align-items: flex-start;
     border-bottom: 1px solid #eee;
     flex-direction: column;
-        line-height: .5rem;
+    line-height: 1rem;
 }
 
 .footer-row a{
@@ -468,7 +471,9 @@ a.nolink {
 }
 
 .footer-row p{
+    margin: 0px;
     margin-bottom: .7rem;
+    text-align: left;
 }
 
 .footer-description {
