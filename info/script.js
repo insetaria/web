@@ -27,28 +27,42 @@ function loadScript(src) {
 // ============================
 
 function getRoute() {
-    let path = window.location.pathname;
 
-    // limpia base path
-    path = path.replace(/^\/info/, '');
+    let rawPath = null;
 
-    // elimina query si se cuela en pathname parsing raro
-    path = path.split('?')[0];
+    // 1. PRIORIDAD: query param del 404 hack
+    const params = new URLSearchParams(window.location.search);
+    const qPath = params.get("path");
 
-    path = path.replace(/\/+/g, '/');
+    if (qPath) {
+        rawPath = qPath;
+    } else {
+        rawPath = window.location.pathname;
+    }
 
-    const parts = path.split('/').filter(Boolean);
+    // 2. limpiar base /info
+    rawPath = rawPath.replace(/^\/info/, '');
+
+    // 3. limpiar query residual
+    rawPath = rawPath.split('?')[0];
+
+    // 4. normalizar slashes
+    rawPath = rawPath.replace(/\/+/g, '/');
+
+    const parts = rawPath.split('/').filter(Boolean);
 
     const entity = parts[0] || null;
     const slug = parts[1] || null;
 
-    // canonical SOLO si válido
+    // 5. canonical correcto
     if (entity && slug) {
         const canonical = document.createElement("link");
         canonical.rel = "canonical";
         canonical.href = `https://insectaria.com/${entity}/${slug}`;
         document.head.appendChild(canonical);
     }
+
+    console.log("[ROUTE DEBUG]", { rawPath, entity, slug });
 
     return { entity, slug };
 }
