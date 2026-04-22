@@ -223,3 +223,43 @@ function renderError() {
         </div>
     `;
 }
+
+function isEnabled(dateStr, filterFutureDates = false){
+    if (!dateStr || dateStr == "") return false;
+    var enabled = true;
+    if(filterFutureDates == true){
+        const activationDate = new Date(dateStr.split('/').reverse().join('-'));
+        enabled = activationDate <= new Date();
+    }
+    return enabled;
+};
+
+function debug(data){
+    console.log("database:", data);
+    document.body.innerHTML = `
+        <pre id="debug"></pre>
+    `;
+    document.getElementById("debug").textContent = JSON.stringify(data, null, 2);
+}
+
+function cleanAppData() {
+  const original = window.appData;
+  if (!original) return null;
+  const result = {};
+  for (const key in original) {
+    if (Object.prototype.hasOwnProperty.call(original, key)) {
+      const value = original[key];
+      if (Array.isArray(value)) {
+        result[key] = value
+          .filter(item => {
+            return !item.hasOwnProperty('enabled') || isEnabled(item.enabled, true);
+          })
+          .map(item => ({ ...item }));
+      } else {
+        result[key] = value;
+      }
+    }
+  }
+
+  return result;
+}
