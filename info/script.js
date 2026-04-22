@@ -115,3 +115,52 @@ function renderPredatorPage(predator) {
 
 // Enlaces en web principal
 //const url = `/predators/${normalize(predator.name + " " + predator.state)}`;
+
+function loadScript(src) {
+    return new Promise((resolve) => {
+        const s = document.createElement("script");
+        s.src = src;
+        s.onload = () => {
+            console.log("Loaded:", src);
+            resolve();
+        };
+        document.head.appendChild(s);
+    });
+}
+
+async function load() {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const gid = params.get("gid");
+
+        if (gid) {
+            window.APP_GID = gid;
+            await loadScript("./prototype.js");
+        } else {
+            await loadScript("./database.js");
+        }
+
+        // 👉 aquí YA está cargado de verdad
+        window.database = cleanAppData();
+
+        const { entity, slug } = getRoute();
+
+        console.log("ROUTE:", entity, slug);
+        console.log("DB:", window.database);
+
+        renderInfoPage(entity, slug);
+
+    } catch (err) {
+        console.error(err);
+        document.body.innerHTML = `
+            <div style="text-align:center;">
+                <h2>Error al cargar datos</h2>
+                <h3>info@insectaria.com</h3>
+            </div>
+        `;
+    }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+    load();
+});
