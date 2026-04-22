@@ -204,6 +204,8 @@ async function load() {
 
         route(entity, slug);
 
+        cleanURL(entity, slug, window.APP_GID);
+
     } catch (err) {
         console.error("[LOAD ERROR]", err);
         renderError();
@@ -240,6 +242,15 @@ function route(entity, slug) {
     }
 
     renderNotFound();
+}
+
+function cleanURL(entity, slug, gid = null) {
+    if (!entity || !slug) return;
+    let url = `/${entity}/${slug}`;
+    if (gid) {
+        url += `?gid=${gid}`;
+    }
+    window.history.replaceState({}, "", url);
 }
 
 
