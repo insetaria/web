@@ -133,10 +133,43 @@ function waitForAppData() {
 // LOAD
 // ============================
 
+function extractGidFromRawPath(rawPath) {
+    if (!rawPath) return null;
+
+    const decoded = decodeURIComponent(rawPath);
+
+    const match = decoded.match(/[?&]gid=([^&]+)/);
+    return match ? match[1] : null;
+}
+
 async function load() {
     try {
+
         const params = new URLSearchParams(window.location.search);
-        const gid = params.get("gid");
+
+        const rawPath = params.get("path") || "";
+
+        // ============================
+        // 🔥 FIX CRÍTICO: EXTRAER GID
+        // ============================
+
+        let gid = params.get("gid");
+
+        if (!gid && rawPath) {
+            const decoded = decodeURIComponent(rawPath);
+            const match = decoded.match(/[?&]gid=([^&]+)/);
+            if (match) gid = match[1];
+        }
+
+        console.log("[LOAD DEBUG]", {
+            gid,
+            rawPath,
+            search: window.location.search
+        });
+
+        // ============================
+        // ENV LOAD
+        // ============================
 
         if (gid) {
             window.APP_GID = gid;
@@ -144,6 +177,10 @@ async function load() {
         } else {
             await loadScript("/database.js");
         }
+
+        // ============================
+        // WAIT DB
+        // ============================
 
         await waitForAppData();
 
@@ -153,7 +190,13 @@ async function load() {
 
         window.database = cleanAppData();
 
+        // ============================
+        // ROUTE
+        // ============================
+
         const { entity, slug } = getRoute();
+
+        console.log("[ROUTE]", { entity, slug });
 
         if (!entity || !slug) {
             return renderNotFound();
@@ -162,7 +205,7 @@ async function load() {
         route(entity, slug);
 
     } catch (err) {
-        console.error(err);
+        console.error("[LOAD ERROR]", err);
         renderError();
     }
 }
