@@ -27,31 +27,20 @@ function loadScript(src) {
 // ============================
 
 function getRoute() {
-    const params = new URLSearchParams(window.location.search);
-    let path = params.get("path") || window.location.pathname;
-
-    // limpia /info si viene del sistema interno
+    let path = window.location.pathname;
     path = path.replace(/^\/info/, '');
-
+    path = path.replace(/\/+/g, '/');
     const parts = path.split('/').filter(Boolean);
-
     const entity = parts[0] || null;
     const slug = parts[1] || null;
-
-    // canonical SEO
     if (entity && slug) {
         const link = document.createElement("link");
         link.rel = "canonical";
         link.href = `https://insectaria.com/${entity}/${slug}`;
         document.head.appendChild(link);
-
-        // limpia URL (opcional pero recomendable)
-        window.history.replaceState({}, "", `/info/${entity}/${slug}`);
     }
-
     return { entity, slug };
 }
-
 
 // ============================
 // NORMALIZER
