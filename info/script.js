@@ -87,15 +87,25 @@ function findItem(collection, slug, fields = []) {
 // ============================
 
 function waitForAppData() {
-    return new Promise((resolve) => {
-        if (window.appData) return resolve(window.appData);
+    return new Promise((resolve, reject) => {
 
-        const handler = () => {
-            document.removeEventListener("appDataReady", handler);
+        console.log("[INFO] waiting appDataReady...");
+
+        if (window.appData) {
+            console.log("[INFO] appData already exists");
+            return resolve(window.appData);
+        }
+
+        const timeout = setTimeout(() => {
+            console.error("[ERROR] appData timeout");
+            reject("appData timeout");
+        }, 5000);
+
+        document.addEventListener("appDataReady", () => {
+            clearTimeout(timeout);
+            console.log("[INFO] appDataReady fired");
             resolve(window.appData);
-        };
-
-        document.addEventListener("appDataReady", handler);
+        });
     });
 }
 
