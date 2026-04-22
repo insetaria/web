@@ -90,10 +90,50 @@ function normalize(text) {
 function findItem(collection, slug, fields = []) {
     if (!collection || !slug) return null;
 
-    return collection.find(item => {
+    const slugNorm = normalize(slug);
+    const slugTokens = slugNorm.split('-');
+
+    let bestMatch = null;
+    let bestScore = -1;
+
+    for (const item of collection) {
+
         const base = fields.map(f => item[f] || "").join(" ");
-        return normalize(base) === slug;
-    });
+        const itemNorm = normalize(base);
+
+        // 1. MATCH EXACTO (prioridad máxima)
+        if (itemNorm === slugNorm) {
+            return item;
+        }
+
+        const itemTokens = itemNorm.split('-');
+
+        // 2. calcular coincidencias de tokens
+        let score = 0;
+
+        for (const token of slugTokens) {
+            if (itemTokens.includes(token)) {
+                score++;
+            }
+        }
+
+        // 3. penalización suave por tamaño (evita matches raros)
+        const lengthDiff = Math.abs(itemTokens.length - slugTokens.length);
+        score -= lengthDiff * 0.1;
+
+        // 4. guardar mejor match
+        if (score > bestScore) {
+            bestScore = score;
+            bestMatch = item;
+        }
+    }
+
+    // 5. umbral mínimo (evita falsos positivos)
+    if (bestScore > 0) {
+        return bestMatch;
+    }
+
+    return null;
 }
 
 
