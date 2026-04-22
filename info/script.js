@@ -23,24 +23,36 @@ function loadScript(src) {
 
 
 // ============================
-// ROUTING (404 + query support)
+// ROUTING
 // ============================
 
 function getRoute() {
     let path = window.location.pathname;
+
+    // limpia base path
     path = path.replace(/^\/info/, '');
+
+    // elimina query si se cuela en pathname parsing raro
+    path = path.split('?')[0];
+
     path = path.replace(/\/+/g, '/');
+
     const parts = path.split('/').filter(Boolean);
+
     const entity = parts[0] || null;
     const slug = parts[1] || null;
+
+    // canonical SOLO si válido
     if (entity && slug) {
-        const link = document.createElement("link");
-        link.rel = "canonical";
-        link.href = `https://insectaria.com/${entity}/${slug}`;
-        document.head.appendChild(link);
+        const canonical = document.createElement("link");
+        canonical.rel = "canonical";
+        canonical.href = `https://insectaria.com/${entity}/${slug}`;
+        document.head.appendChild(canonical);
     }
+
     return { entity, slug };
 }
+
 
 // ============================
 // NORMALIZER
@@ -58,7 +70,7 @@ function normalize(text) {
 
 
 // ============================
-// FINDER GENERICO
+// FINDER
 // ============================
 
 function findItem(collection, slug, fields = []) {
@@ -72,31 +84,40 @@ function findItem(collection, slug, fields = []) {
 
 
 // ============================
-// MAIN LOADER
+// WAIT APP DATA (FIX REAL)
 // ============================
 
 function waitForAppData() {
     return new Promise((resolve, reject) => {
 
-        console.log("[INFO] waiting appDataReady...");
-
         if (window.appData) {
-            console.log("[INFO] appData already exists");
             return resolve(window.appData);
         }
 
+        let done = false;
+
         const timeout = setTimeout(() => {
+            if (done) return;
             console.error("[ERROR] appData timeout");
             reject("appData timeout");
         }, 5000);
 
-        document.addEventListener("appDataReady", () => {
+        const handler = () => {
+            if (done) return;
+            done = true;
             clearTimeout(timeout);
-            console.log("[INFO] appDataReady fired");
+            document.removeEventListener("appDataReady", handler);
             resolve(window.appData);
-        });
+        };
+
+        document.addEventListener("appDataReady", handler, { once: true });
     });
 }
+
+
+// ============================
+// LOAD
+// ============================
 
 async function load() {
     try {
@@ -112,9 +133,17 @@ async function load() {
 
         await waitForAppData();
 
+        if (!window.appData) {
+            throw new Error("appData no disponible");
+        }
+
         window.database = cleanAppData();
 
         const { entity, slug } = getRoute();
+
+        if (!entity || !slug) {
+            return renderNotFound();
+        }
 
         route(entity, slug);
 
@@ -158,10 +187,12 @@ function route(entity, slug) {
 
 
 // ============================
-// RENDERS
+// RENDERS (SAFE)
 // ============================
 
 function renderPredator(predator) {
+    if (!predator) return renderNotFound();
+
     document.body.innerHTML = `
         <div class="container">
             <h1><i>${predator.name}</i> - ${predator.state}</h1>
@@ -180,13 +211,13 @@ function renderPredator(predator) {
     `;
 }
 
-
-// placeholder futuros
 function renderService(item) {
+    if (!item) return renderNotFound();
     document.body.innerHTML = `<h1>${item.title}</h1>`;
 }
 
 function renderProject(item) {
+    if (!item) return renderNotFound();
     document.body.innerHTML = `<h1>${item.title}</h1>`;
 }
 
@@ -213,42 +244,46 @@ function renderError() {
     `;
 }
 
+
+// ============================
+// UTILITIES (FIXED)
+// ============================
+
 function isEnabled(dateStr, filterFutureDates = false){
-    if (!dateStr || dateStr == "") return false;
-    var enabled = true;
-    if(filterFutureDates == true){
+    if (!dateStr) return false;
+
+    let enabled = true;
+
+    if (filterFutureDates) {
         const activationDate = new Date(dateStr.split('/').reverse().join('-'));
         enabled = activationDate <= new Date();
     }
-    return enabled;
-};
 
-function debug(data){
-    console.log("database:", data);
-    document.body.innerHTML = `
-        <pre id="debug"></pre>
-    `;
-    document.getElementById("debug").textContent = JSON.stringify(data, null, 2);
+    return enabled;
 }
 
-function cleanAppData() {
-  const original = window.appData;
-  if (!original) return null;
-  const result = {};
-  for (const key in original) {
-    if (Object.prototype.hasOwnProperty.call(original, key)) {
-      const value = original[key];
-      if (Array.isArray(value)) {
-        result[key] = value
-          .filter(item => {
-            return !item.hasOwnProperty('enabled') || isEnabled(item.enabled, true);
-          })
-          .map(item => ({ ...item }));
-      } else {
-        result[key] = value;
-      }
-    }
-  }
 
-  return result;
+// ============================
+// CLEAN DATA
+// ============================
+
+function cleanAppData() {
+    const original = window.appData;
+    if (!original) return null;
+
+    const result = {};
+
+    for (const key in original) {
+        const value = original[key];
+
+        if (Array.isArray(value)) {
+            result[key] = value
+                .filter(item => !item?.enabled || isEnabled(item.enabled, true))
+                .map(item => ({ ...item }));
+        } else {
+            result[key] = value;
+        }
+    }
+
+    return result;
 }
