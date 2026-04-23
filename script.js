@@ -328,7 +328,7 @@ function renderServices(section) {
 function renderPredators(section) {
     const predatorsSection = document.getElementById('predators') || document.createElement('section');
     predatorsSection.id = 'portfolio';
-    predatorsSection.role= 'contentinfo';
+    predatorsSection.role = 'contentinfo';
     predatorsSection.innerHTML = `
         <div class="container">
             <div>
@@ -336,9 +336,16 @@ function renderPredators(section) {
                 <p>${section.text}</p>
             </div>
             <div class="grid">
-                ${database.predators.map((predator, index) => `
+                ${database.predators.map((predator, index) => {
+                    // Condición original para modal + Nueva condición para página externa
+                    const hasModal = predator.modal && (predator.sheet || predator.price);
+                    const hasExternalPage = predator.page === true && predator.content;
+                    const isClickable = hasModal || hasExternalPage;
+
+                    return `
                     <div class="predator-card">
-                        <div class="card ${(predator.modal && (predator.sheet || predator.price)) ? 'clickable-card' : ''}" data-index="${index}">                            ${predator.image ? `<div class="predator-image"><img src="https://www.insectaria.com/${predator.image}" alt="${predator.name}"></div>` : ''}
+                        <div class="card ${isClickable ? 'clickable-card' : ''}" data-index="${index}">
+                            ${predator.image ? `<div class="predator-image"><img src="https://www.insectaria.com/${predator.image}" alt="${predator.name}"></div>` : ''}
                             <div class="predator-info">
                                 <h3><i>${predator.name}</i></h3>
                                 <h4>${predator.state}</h4>
@@ -346,22 +353,22 @@ function renderPredators(section) {
                             </div>
                         </div>
                     </div>
-                `).join('')}
+                `}).join('')}
             </div>
         </div>
     `;
 
     if (section.font) predatorsSection.style.color = section.font;
     if (!document.getElementById('predators')) document.body.append(predatorsSection);
+
     const cards = predatorsSection.querySelectorAll('.card.clickable-card');
     cards.forEach(card => {
         const index = card.getAttribute('data-index');
         const predator = database.predators[index];
 
-        if(predator.price || predator.sheet){
-            card.style.cursor = 'pointer';
-            card.addEventListener('click', () => {
-                
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', () => {
+            if (predator.modal && (predator.price || predator.sheet)) {
                 let priceTable = '';
                 if (predator.price) {
                     const rows = predator.price.trim().split('\n');
@@ -382,12 +389,18 @@ function renderPredators(section) {
                             <img src="https://insectaria.com/${predator.image}" class="modal-image">
                             ${priceTable}
                         </div>
-                        ${predator.sheet ? predator.sheet.split('\n').map(line => `<p>${line.trim()}</p>`).join(''): ''}
+                        ${predator.sheet ? predator.sheet.split('\n').map(line => `<p>${line.trim()}</p>`).join('') : ''}
                     </div>
                 `;
                 modal(`<i>${predator.name}</i> - ${predator.state}`, modalContent);
-            });
-        }
+
+            } 
+            else if (predator.page === true && predator.content) {
+                const formattedName = predator.name.toLowerCase().trim().replace(/\s+/g, '-');
+                const url = `https://insectaria.com/info/predator/${formattedName}`;
+                window.open(url, '_blank');
+            }
+        });
     });
 }
 
