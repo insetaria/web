@@ -591,7 +591,7 @@ function renderContact(section) {
 }
 
 function renderFooter(section) {
-    if (!database.footer || database.footer.length === 0) return;
+    if (!database.footer) return;
 
     const footerSection = document.getElementById('footer') || document.createElement('section');
     footerSection.id = 'footer';

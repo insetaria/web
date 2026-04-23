@@ -142,7 +142,7 @@ function parseData(menu, sections, services, predators, methodology, projects, i
         services: services
             .filter(x => isEnabled(x["Habilitado"]))
             .map(x => {
-                const hasModal = String(x["Modal"] ?? "").trim().toLowerCase() === "si",
+                const hasModal = String(x["Modal"] ?? "").trim().toLowerCase() === "si";
                 return {
                     enabled: x["Habilitado"],
                     title: x["Título"],
@@ -157,7 +157,7 @@ function parseData(menu, sections, services, predators, methodology, projects, i
         predators: predators
             .filter(x => isEnabled(x["Habilitado"]))
             .map(x => {
-                const hasModal = String(x["Modal"] ?? "").trim().toLowerCase() === "si",
+                const hasModal = String(x["Modal"] ?? "").trim().toLowerCase() === "si";
                 const hasPage = String(x["Página"] ?? "").trim().toLowerCase() === "si";
                 return {
                     enabled: x["Habilitado"],
@@ -183,7 +183,7 @@ function parseData(menu, sections, services, predators, methodology, projects, i
         idi : idi
             .filter(x => isEnabled(x["Habilitado"]))
             .map(x => {
-                const hasModal = String(x["Modal"] ?? "").trim().toLowerCase() === "si",
+                const hasModal = String(x["Modal"] ?? "").trim().toLowerCase() === "si";
                 return {
                     enabled: x["Habilitado"],
                     title: x["Título"],
@@ -301,7 +301,7 @@ async function handleCompleteExport() {
                 const hasModal = item.page;
                 const hasContent = item.content && item.content.trim().length > 0;
 
-                if (!hasModal || !hasSheet) continue;
+                if (!hasModal || !hasContent) continue;
 
                 const slug = normalizeStatic(item.name || item.title || "");
                 const html = generateStaticHTML(col.key, item);
