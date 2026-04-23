@@ -268,13 +268,22 @@ function Publish-ToGit {
 # ============================================================================
 
 Clear-Host
-Write-Host "¿Quieres extraer archivos de un ZIP? (S/N): " -NoNewline -ForegroundColor Yellow
-$ansExt = Read-Host
+
+# Comprobar si hay ZIPs ANTES de preguntar
+$zipsDisponibles = Find-ZipFiles
+
+if ($zipsDisponibles.Count -eq 0) {
+    Write-Host "ℹ  No se han encontrado archivos .zip en el directorio actual." -ForegroundColor DarkYellow
+    Write-Host "   Saltando directamente a la publicación en Git...`n" -ForegroundColor Gray
+    $ansExt = "n"
+} else {
+    Write-Host "¿Quieres extraer archivos de un ZIP? (S/N): " -NoNewline -ForegroundColor Yellow
+    $ansExt = Read-Host
+}
 
 if ($ansExt -eq "s" -or $ansExt -eq "S") {
     try {
-        $zips = Find-ZipFiles
-        $selectedZip = Select-ZipFile -zips $zips
+        $selectedZip = Select-ZipFile -zips $zipsDisponibles
         
         if ($selectedZip) {
             Write-Host "🔍 Analizando hashes y archivos existentes..." -ForegroundColor Yellow
