@@ -141,32 +141,37 @@ function parseData(menu, sections, services, predators, methodology, projects, i
             })),
         services: services
             .filter(x => isEnabled(x["Habilitado"]))
-            .map(x => ({
-                enabled: x["Habilitado"],
-                title: x["Título"],
-                text: x["Texto"],
-                image: x["Imagen"],
-                icon: x["Icono"],
-                modal: String(x["Modal"] ?? "")
-                    .trim()
-                    .toLowerCase() === "si",
-                modalImage: x["ImagenModal"],
-                sheet: x["Ficha"]
-            })),
+            .map(x => {
+                const hasModal = String(x["Modal"] ?? "").trim().toLowerCase() === "si",
+                return {
+                    enabled: x["Habilitado"],
+                    title: x["Título"],
+                    text: x["Texto"],
+                    image: x["Imagen"],
+                    icon: x["Icono"],
+                    modal: hasModal,
+                    modalImage: hasModal ? (x["ImagenModal"] ?? "") : "",
+                    sheet: hasModal ? (x["Ficha"] ?? "") : "",
+                }
+            }),
         predators: predators
             .filter(x => isEnabled(x["Habilitado"]))
-            .map(x => ({
-                enabled: x["Habilitado"],
-                name: x["Nombre"],
-                state: x["Estadio"],
-                description: x["Descripción"],
-                image: x["Imagen"],
-                modal: String(x["Modal"] ?? "")
-                    .trim()
-                    .toLowerCase() === "si",
-                price: x["Precio"],
-                sheet: x["Ficha"],
-            })),
+            .map(x => {
+                const hasModal = String(x["Modal"] ?? "").trim().toLowerCase() === "si",
+                const hasPage = String(x["Página"] ?? "").trim().toLowerCase() === "si";
+                return {
+                    enabled: x["Habilitado"],
+                    name: x["Nombre"],
+                    state: x["Estadio"],
+                    description: x["Descripción"],
+                    image: x["Imagen"],
+                    modal: hasModal,
+                    price: hasModal ? (x["Precio"] ?? "") : "", 
+                    sheet: hasModal ? (x["Ficha"] ?? "") : "",
+                    page: hasPage,
+                    content: hasPage ? (x["Contenido"] ?? "") : "" 
+                };
+            }),
         projects : projects
             .filter(x => isEnabled(x["Habilitado"]))
             .map(x => ({
@@ -177,18 +182,19 @@ function parseData(menu, sections, services, predators, methodology, projects, i
             })),
         idi : idi
             .filter(x => isEnabled(x["Habilitado"]))
-            .map(x => ({
-                enabled: x["Habilitado"],
-                title: x["Título"],
-                description: x["Descripción"],
-                image: x["Imagen"],
-                background: x["Fondo"],
-                link: x["Enlace"],
-                modal: String(x["Modal"] ?? "")
-                    .trim()
-                    .toLowerCase() === "si",
-                sheet: x["Ficha"]
-            })),
+            .map(x => {
+                const hasModal = String(x["Modal"] ?? "").trim().toLowerCase() === "si",
+                return {
+                    enabled: x["Habilitado"],
+                    title: x["Título"],
+                    description: x["Descripción"],
+                    image: x["Imagen"],
+                    background: x["Fondo"],
+                    link: x["Enlace"],
+                    modal: hasModal ? (x["Ficha"] ?? "") : "",
+                    sheet: x["Ficha"]
+                };
+            }),
         footer: footer
             .filter(x => isEnabled(x["Habilitado"]))
             .map(x => ({
@@ -248,26 +254,159 @@ function createFloatingSaveButton(appData) {
         btn.style.transform = "scale(1)";
     });
 
-    btn.addEventListener("click", async () => {
-        try {
-            const options = {
-                suggestedName: 'database.js',
-                types: [{
-                    description: 'JavaScript File',
-                    accept: {'application/javascript': ['.js']},
-                }],
-            };
-            const handle = await window.showSaveFilePicker(options);
-            const writable = await handle.createWritable();
-            await writable.write(`window.appData = ${JSON.stringify(window.appData, null, 2)};`);
-            await writable.write('document.dispatchEvent(new Event("appDataReady"));');
-            await writable.close();
-        } catch (err) {
-
-        }
+    btn.addEventListener("click", () => {
+        handleCompleteExport();
     });
     container.appendChild(btn);
     document.body.appendChild(container);
+}
+
+async function ensureJSZip() {
+    if (window.JSZip) return;
+
+    await loadScript("https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js");
+}
+
+function getFormattedTimestamp() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    return `${year}.${month}.${day}_${hours}.${minutes}.${seconds}`;
+}
+
+async function handleCompleteExport() {
+    try {
+        await ensureJSZip();
+        const zip = new JSZip();
+        const databaseContent = `window.appData = ${JSON.stringify(window.appData, null, 2)};\ndocument.dispatchEvent(new Event("appDataReady"));`;
+        
+        zip.file("database.js", databaseContent);
+        console.log("[ZIP] añadido: database.js");
+
+        const collections = [
+            { key: "predators", basePath: "predators" },
+            { key: "services", basePath: "services" },
+            { key: "projects", basePath: "projects" }
+        ];
+
+        for (const col of collections) {
+            const items = window.appData[col.key];
+            if (!items) continue;
+
+            for (const item of items) {
+                const hasModal = item.page;
+                const hasContent = item.content && item.content.trim().length > 0;
+
+                if (!hasModal || !hasSheet) continue;
+
+                const slug = normalizeStatic(item.name || item.title || "");
+                const html = generateStaticHTML(col.key, item);
+
+                zip.file(
+                    `${col.basePath}/${slug}.html`,
+                    html
+                );
+
+                console.log(`[ZIP] añadido: ${col.basePath}/${slug}.html`);
+            }
+        }
+
+        console.log("[ZIP] generando archivo...");
+
+        const timestamp = getFormattedTimestamp();
+        const filename = `insectaria-${timestamp}.zip`;
+
+        const blob = await zip.generateAsync({
+            type: "blob",
+            compression: "DEFLATE",
+            compressionOptions: {
+                level: 6
+            }
+        });
+
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+        console.log(`[ZIP] descargado: ${filename}`);
+
+    } catch (err) {
+        console.error("[EXPORT ZIP] error:", err);
+    }
+}
+
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+    });
+}
+
+async function downloadFile(filename, content, mime = "text/html") {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    // 👇 CLAVE: retrasar revoke
+    setTimeout(() => {
+        URL.revokeObjectURL(url);
+    }, 1000);
+}
+
+function normalizeStatic(text) {
+    return (text || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-");
+}
+
+function generateStaticHTML(type, item) {
+    return `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <title>${item.name || item.title}</title>
+            <link rel="stylesheet" href="/assets/css/style.css">
+        </head>
+        <body>
+
+            <div id="content"></div>
+
+            <script>
+                window.STATIC_MODE = true;
+                window.STATIC_TYPE = "${type}";
+                window.STATIC_ITEM = ${JSON.stringify(item)};
+            </script>
+
+            <script src="/info/info.js"></script>
+        </body>
+        </html>
+    `;
 }
 
 loadDataSheet();
