@@ -397,7 +397,7 @@ function renderPredators(section) {
             } 
             else if (predator.page === true && predator.content) {
                 const formattedName = predator.name.toLowerCase().trim().replace(/\s+/g, '-');
-                const url = `https://insectaria.com/info/predator/${formattedName}`;
+                const url = `predators/${formattedName}.html`;
                 window.open(url, '_blank');
             }
         });

@@ -86,7 +86,7 @@ function Analyze-Zip {
         
         $zip = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
         $structure = @{}
-        $database = @()
+        $database = New-Object System.Collections.Generic.List[object]
         $currentDir = (Get-Location).Path
 
         foreach ($entry in $zip.Entries) {
@@ -112,17 +112,21 @@ function Analyze-Zip {
                 }
             }
 
-            $item = @{ 
-                name = if ($isRoot) { $parts[0] } else { $entry.FullName.Substring($folder.Length + 1) }; 
-                path = $entry.FullName; 
-                status = $statusType;
+            $item = [PSCustomObject]@{ 
+                name = if ($isRoot) { $parts[0] } else { $entry.FullName.Substring($folder.Length + 1) }
+                path = $entry.FullName
+                status = $statusType
                 needsUpdate = ($statusType -ne "IGUAL")
             }
 
-            if ($isRoot) { $database += $item }
+            if ($isRoot) { 
+                $database.Add($item) 
+            }
             else {
-                if (-not $structure.ContainsKey($folder)) { $structure[$folder] = @() }
-                $structure[$folder] += $item
+                if (-not $structure.ContainsKey($folder)) { 
+                    $structure[$folder] = New-Object System.Collections.Generic.List[object]
+                }
+                $structure[$folder].Add($item)
             }
         }
         $zip.Dispose()
@@ -135,12 +139,22 @@ function Analyze-Zip {
 
 function Build-Tabs {
     param($structure, $database)
-    $tabs = [System.Collections.ArrayList]@()
-    if ($database.Count -gt 0) { [void]$tabs.Add(@{ name = "Raíz"; folder = "."; files = $database }) }
-    $structure.Keys | Sort-Object | ForEach-Object {
-        [void]$tabs.Add(@{ name = $_; folder = $_; files = $structure[$_] })
+    $tabs = New-Object System.Collections.Generic.List[object]
+    
+    if ($null -ne $database -and $database.Count -gt 0) { 
+        $rootFiles = New-Object System.Collections.Generic.List[object]
+        foreach ($f in $database) { $rootFiles.Add($f) }
+        $tabs.Add(@{ name = "Raíz"; folder = "."; files = $rootFiles })
     }
-    return $tabs
+    
+    if ($null -ne $structure -and $structure.Keys.Count -gt 0) {
+        foreach ($key in ($structure.Keys | Sort-Object)) {
+            $folderFiles = New-Object System.Collections.Generic.List[object]
+            foreach ($f in $structure[$key]) { $folderFiles.Add($f) }
+            $tabs.Add(@{ name = $key; folder = $key; files = $folderFiles })
+        }
+    }
+    return ,$tabs
 }
 
 function Draw-Window {
@@ -168,8 +182,10 @@ function Draw-Window {
     Write-Host "╟$($('─' * $innerW))╢" -ForegroundColor Cyan
 
     $files = $tabs[$selectedTab]['files']
+    $fileCount = if ($null -eq $files) { 0 } else { $files.Count }
+    
     for ($i = 0; $i -lt 12; $i++) {
-        if ($i -lt $files.Count) {
+        if ($i -lt $fileCount) {
             $f = $files[$i]
             $key = "$selectedTab-$i"
             $mark = if ($checked[$key]) { "[x]" } else { "[ ]" }
@@ -267,56 +283,69 @@ if ($ansExt -eq "s" -or $ansExt -eq "S") {
             if ($zipData) {
                 $tabs = Build-Tabs -structure $zipData['structure'] -database $zipData['database']
 
-                # Auto-marcar modificados/nuevos
-                for ($t = 0; $t -lt $tabs.Count; $t++) {
-                    for ($f = 0; $f -lt $tabs[$t].files.Count; $f++) {
-                        if ($tabs[$t].files[$f].needsUpdate) { $checked["$t-$f"] = $true }
-                    }
-                }
-
-                $loop = $true
-                while ($loop) {
-                    Draw-Window -tabs $tabs -selectedTab $selectedTab -selectedOption $selectedOption -checked $checked -width $width
-                    $key = [Console]::ReadKey($true)
-                    switch ($key.Key) {
-                        "RightArrow" { $selectedTab = ($selectedTab + 1) % $tabs.Count; $selectedOption = 0 }
-                        "LeftArrow"  { $selectedTab = ($selectedTab - 1 + $tabs.Count) % $tabs.Count; $selectedOption = 0 }
-                        "DownArrow"  { $selectedOption = ($selectedOption + 1) % $tabs[$selectedTab].files.Count }
-                        "UpArrow"    { $selectedOption = ($selectedOption - 1 + $tabs[$selectedTab].files.Count) % $tabs[$selectedTab].files.Count }
-                        "Spacebar"   { $checked["$selectedTab-$selectedOption"] = -not $checked["$selectedTab-$selectedOption"] }
-                        "Enter"      { $loop = $false; $confirmed = $true }
-                        "Escape"     { $loop = $false }
-                    }
-                }
-
-                if ($confirmed) {
-                    $zip = [System.IO.Compression.ZipFile]::OpenRead($zipData['zipPath'])
-                    $currentDir = (Get-Location).Path
-                    $extractedCount = 0
-
-                    Write-Host "`nExtrayendo..." -ForegroundColor Yellow
+                if ($null -eq $tabs -or $tabs.Count -eq 0) {
+                    Write-Host "❌ El ZIP no contiene archivos procesables." -ForegroundColor Red
+                    Read-Host "Pulsa Enter para continuar"
+                } else {
+                    # Auto-marcar modificados/nuevos
                     for ($t = 0; $t -lt $tabs.Count; $t++) {
-                        foreach ($i in 0..($tabs[$t].files.Count-1)) {
-                            if ($checked["$t-$i"]) {
-                                $file = $tabs[$t].files[$i]
-                                $entry = $zip.GetEntry($file.path)
-                                $target = Join-Path $currentDir $file.path
-                                $parent = Split-Path $target
-                                if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
-                                
-                                [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $target, $true)
-                                Write-Host " ✓ $target" -ForegroundColor Green
-                                $extractedCount++
-                            }
+                        $filesArr = $tabs[$t].files
+                        if ($null -eq $filesArr) { continue }
+                        for ($f = 0; $f -lt $filesArr.Count; $f++) {
+                            if ($filesArr[$f].needsUpdate) { $checked["$t-$f"] = $true }
                         }
                     }
-                    $zip.Dispose()
-                    Write-Host "`nProceso finalizado. $extractedCount archivos actualizados." -ForegroundColor Cyan
+
+                    $loop = $true
+                    while ($loop) {
+                        Draw-Window -tabs $tabs -selectedTab $selectedTab -selectedOption $selectedOption -checked $checked -width $width
+                        $currentFiles = $tabs[$selectedTab].files
+                        $currentCount = if ($null -eq $currentFiles) { 0 } else { $currentFiles.Count }
+                        $key = [Console]::ReadKey($true)
+                        switch ($key.Key) {
+                            "RightArrow" { $selectedTab = ($selectedTab + 1) % $tabs.Count; $selectedOption = 0 }
+                            "LeftArrow"  { $selectedTab = ($selectedTab - 1 + $tabs.Count) % $tabs.Count; $selectedOption = 0 }
+                            "DownArrow"  { if ($currentCount -gt 0) { $selectedOption = ($selectedOption + 1) % $currentCount } }
+                            "UpArrow"    { if ($currentCount -gt 0) { $selectedOption = ($selectedOption - 1 + $currentCount) % $currentCount } }
+                            "Spacebar"   { $checked["$selectedTab-$selectedOption"] = -not $checked["$selectedTab-$selectedOption"] }
+                            "Enter"      { $loop = $false; $confirmed = $true }
+                            "Escape"     { $loop = $false }
+                        }
+                    }
+
+                    if ($confirmed) {
+                        $zip = [System.IO.Compression.ZipFile]::OpenRead($zipData['zipPath'])
+                        $currentDir = (Get-Location).Path
+                        $extractedCount = 0
+
+                        Write-Host "`nExtrayendo..." -ForegroundColor Yellow
+                        for ($t = 0; $t -lt $tabs.Count; $t++) {
+                            $filesArr = $tabs[$t].files
+                            if ($null -eq $filesArr) { continue }
+                            for ($i = 0; $i -lt $filesArr.Count; $i++) {
+                                if ($checked["$t-$i"]) {
+                                    $file = $filesArr[$i]
+                                    $entry = $zip.GetEntry($file.path)
+                                    $target = Join-Path $currentDir $file.path
+                                    $parent = Split-Path $target
+                                    if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
+                                    
+                                    [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $target, $true)
+                                    Write-Host " ✓ $target" -ForegroundColor Green
+                                    $extractedCount++
+                                }
+                            }
+                        }
+                        $zip.Dispose()
+                        Write-Host "`nProceso finalizado. $extractedCount archivos actualizados." -ForegroundColor Cyan
+                    }
                 }
             }
         }
     } catch {
         Write-Host "❌ Error durante la extracción: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "   Línea: $($_.InvocationInfo.ScriptLineNumber)" -ForegroundColor DarkGray
+        Write-Host "   Comando: $($_.InvocationInfo.Line.Trim())" -ForegroundColor DarkGray
         Read-Host
     }
 }

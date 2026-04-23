@@ -391,17 +391,12 @@ function generateStaticHTML(type, item) {
         <head>
             <meta charset="UTF-8">
             <title>${item.name || item.title}</title>
-            <link rel="stylesheet" href="/assets/css/style.css">
+            <link rel="stylesheet" href="/assets/css/info.css">
         </head>
         <body>
 
-            <div id="content"></div>
-
-            <script>
-                window.STATIC_MODE = true;
-                window.STATIC_TYPE = "${type}";
-                window.STATIC_ITEM = ${JSON.stringify(item)};
-            </script>
+            <h1>${item.name || item.title}</h1>
+            <p>${item.content}</p>
 
             <script src="/info/info.js"></script>
         </body>
