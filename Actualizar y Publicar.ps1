@@ -372,9 +372,7 @@ function Select-GitFiles {
     }
     
     if ($changes.Count -eq 0) {
-        Write-Host "ℹ  No hay cambios pendientes en Git." -ForegroundColor DarkYellow
-        Read-Host "Pulsa Enter para continuar"
-        return @()
+        return ,@()
     }
     
     $gitTabs = Build-GitTabs -changes $changes
@@ -531,6 +529,7 @@ function Publish-ToGit {
         
         Write-Host "`n-> Agregando $($selectedFiles.Count) archivo(s) seleccionado(s)..." -ForegroundColor Gray
         foreach ($filePath in $selectedFiles) {
+            if ([string]::IsNullOrWhiteSpace($filePath)) { continue }
             Write-Host "   + $filePath" -ForegroundColor DarkGray
             Invoke-Git -Arguments "add", "--", $filePath
         }
@@ -660,6 +659,28 @@ if ($ansExt -eq "s" -or $ansExt -eq "S") {
 }
 
 # SALTO A GIT
+# Comprobar si hay cambios pendientes antes de preguntar
+Write-Host "`n🔍 Comprobando estado de Git..." -ForegroundColor Yellow
+
+$hayCambios = $false
+try {
+    $gitChanges = Get-GitChanges
+    $hayCambios = ($gitChanges.Count -gt 0)
+} catch {
+    Write-Host "❌ No se pudo comprobar el estado de Git: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "   ¿Estás en un repositorio git?" -ForegroundColor DarkGray
+    Write-Host "`nSaliendo..." -ForegroundColor Gray
+    return
+}
+
+if (-not $hayCambios) {
+    Write-Host "ℹ  No hay cambios pendientes en Git. Nada que publicar." -ForegroundColor DarkYellow
+    Write-Host "`nPresione cualquier tecla para salir..."
+    $null = [System.Console]::ReadKey($true)
+    return
+}
+
+Write-Host "   $($gitChanges.Count) archivo(s) con cambios detectado(s)." -ForegroundColor Gray
 Write-Host "`n¿Deseas publicar los cambios en Git ahora? (S/N): " -NoNewline -ForegroundColor Yellow
 $ansGit = Read-Host
 if ($ansGit -eq "s" -or $ansGit -eq "S") {
