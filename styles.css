@@ -35,6 +35,10 @@ h2 {
 h3 {
     font-weight: normal;
 }
+p.spacer {
+    height: 1rem;
+    margin: 0;
+}
 section, footer{
     padding-top: 3rem;
     padding-bottom: 3rem;

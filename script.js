@@ -57,6 +57,17 @@ function smoothScroll(target, duration = 800) {
     }
 }
 
+function renderParagraphs(text) {
+    if (!text) return '';
+    const blockTags = /^<(hr|h[1-6]|ul|ol|li|div|table|blockquote|pre|figure)\b/i;
+    return text.split('\n').map(line => {
+        const t = line.trim();
+        if (!t) return `<p class="spacer"></p>`;
+        if (blockTags.test(t)) return t;
+        return `<p>${t}</p>`;
+    }).join('');
+}
+
 function updateActiveMenu() {
     if(autoScrolling) return;
     const menuItems = Array.from(document.querySelectorAll('.menu-item'))
@@ -112,7 +123,9 @@ function renderMenu() {
     container.role = 'navigation';
     container.innerHTML = `
         <div class="logo">
-            <img src="./assets/img/logos/logo.png" width="auto" height="35px" alt="Insectaria" title="Insectaria" style="cursor: pointer;display: list-item; text-align: -webkit-match-parent;">
+            <a href="${getBasePath()}${getGidSuffix()}" class="nolink">
+                <img src="${getBasePath()}assets/img/logos/logo.png" width="auto" height="35px" alt="Insectaria" title="Insectaria" style="cursor: pointer;display: list-item; text-align: -webkit-match-parent;">
+            </a>
         </div>
         <div class="menu-group">
             <div id="hamburger"><span></span><span></span><span></span></div>
@@ -122,9 +135,17 @@ function renderMenu() {
                         var attributes = ''
                         if(item.link){
                             const isExternal = item.link.startsWith('http');
-                            attributes = isExternal 
-                                ? `href="${item.link}" target="_blank" rel="noopener noreferrer"` 
-                                : `href="${item.link}"`;
+                            const isAnchor = item.link.startsWith('#');
+                            // Desde una página de detalle, las anclas deben
+                            // apuntar a la home + ancla, conservando el gid.
+                            const isDetail = detectPage().type === "detail";
+                            let finalHref = item.link;
+                            if (isAnchor && isDetail) {
+                                finalHref = `${getBasePath()}${getGidSuffix()}${item.link}`;
+                            }
+                            attributes = isExternal
+                                ? `href="${item.link}" target="_blank" rel="noopener noreferrer"`
+                                : `href="${finalHref}"`;
                         }
 
                         const content = item.text.startsWith("icofont") 
@@ -172,7 +193,7 @@ function renderHero(section) {
     const heroSection = document.getElementById('hero') || document.createElement('section');
     heroSection.id = 'hero';
     heroSection.role= 'main';
-    if (section.background) heroSection.style.backgroundImage = `url(${section.background})`;
+    if (section.background) heroSection.style.backgroundImage = `url(${resolveAsset(section.background)})`;
     heroSection.innerHTML = `
         <div class="container">
             <a class="nolink" ${section.link ? `onclick="smoothScroll('${section.link}')"` : ''}>
@@ -230,7 +251,7 @@ function renderServices(section) {
     servicesSection.role = 'contentinfo';
 
     if (section.background){
-        servicesSection.style.backgroundImage = `url(${section.background})`;
+        servicesSection.style.backgroundImage = `url(${resolveAsset(section.background)})`;
         servicesSection.classList.add('bg');
     }
     
@@ -241,7 +262,7 @@ function renderServices(section) {
                     <div class="service-card hover-bg">
                         <div class="card ${(service.modal && service.sheet) ? 'clickable-card hover-shadow' : ''}" 
                              data-index="${index}" 
-                             ${service.image ? `style="--hover-bg: url('${service.image}')"` : ``}>
+                             ${service.image ? `style="--hover-bg: url('${resolveAsset(service.image)}')"` : ``}>
                             <div class="service-info">
                                 <div class="icon"><i class="${service.icon} service-icon"></i></div>
                                 <h4>${service.title}</h4>
@@ -273,10 +294,10 @@ function renderServices(section) {
                 const modalContent = `
                     <div>
                         ${(service.modalImage || service.image) 
-                            ? `<img src="${service.modalImage || service.image}" class="modal-image" style="float:left;">` 
+                            ? `<img src="${resolveAsset(service.modalImage || service.image)}" class="modal-image" style="float:left;">` 
                             : ''
                         }
-                        ${service.sheet.split('\n').map(line => `<p>${line.trim()}</p>`).join('')}
+                        ${renderParagraphs(service.sheet)}
                     </div>
                 `;
                 modal(service.title, modalContent);
@@ -345,7 +366,7 @@ function renderPredators(section) {
                     return `
                     <div class="predator-card">
                         <div class="card ${isClickable ? 'clickable-card' : ''}" data-index="${index}">
-                            ${predator.image ? `<div class="predator-image"><img src="https://www.insectaria.com/${predator.image}" alt="${predator.name}"></div>` : ''}
+                            ${predator.image ? `<div class="predator-image"><img src="${resolveAsset(predator.image)}" alt="${predator.name}"></div>` : ''}
                             <div class="predator-info">
                                 <h3><i>${predator.name}</i></h3>
                                 <h4>${predator.state}</h4>
@@ -386,18 +407,21 @@ function renderPredators(section) {
                 const modalContent = `
                     <div>
                         <div class="predator-graphic-info">
-                            <img src="https://insectaria.com/${predator.image}" class="modal-image">
+                            <img src="${resolveAsset(predator.image)}" class="modal-image">
                             ${priceTable}
                         </div>
-                        ${predator.sheet ? predator.sheet.split('\n').map(line => `<p>${line.trim()}</p>`).join('') : ''}
+                        ${predator.sheet ? renderParagraphs(predator.sheet) : ''}
                     </div>
                 `;
                 modal(`<i>${predator.name}</i> - ${predator.state}`, modalContent);
 
             } 
             else if (predator.page === true && predator.content) {
-                const formattedName = predator.name.toLowerCase().trim().replace(/\s+/g, '-');
-                const url = `predators/${formattedName}.html`;
+                // Usamos el id pre-calculado (prototype.js lo genera al
+                // parsear y queda persistido en database.js al exportar).
+                // Fallback al slug del nombre para datos antiguos.
+                const slug = predator.id || slugify(predator.name);
+                const url = buildDetailUrl("predators", slug);
                 window.open(url, '_blank');
             }
         });
@@ -410,7 +434,7 @@ function renderProjects(section) {
     projectsSection.role = 'contentinfo';
     projectsSection.classList.add('bg');
     
-    if (section.background) projectsSection.style.backgroundImage = `url(${section.background})`;
+    if (section.background) projectsSection.style.backgroundImage = `url(${resolveAsset(section.background)})`;
     if (section.font) projectsSection.style.color = section.font;
 
     projectsSection.innerHTML = `
@@ -500,12 +524,12 @@ function renderIdi(section) {
                     const hasLink = idi.link && idi.link.trim() !== "";
                     const hasModal = idi.modal && idi.sheet && idi.sheet.trim() !== "";
 
-                    const styles = ((hasLink || hasModal) && idi.background) ? `style="--hover-bg: url('${idi.background.replace(/\\/g, '/')}');"` : '';
+                    const styles = ((hasLink || hasModal) && idi.background) ? `style="--hover-bg: url('${resolveAsset(idi.background.replace(/\\/g, '/'))}');"` : '';
                     const classes = `class="card${(hasLink || hasModal) ? ' hover-shadow':''}"`;
                     const cardInner = `
                         <div ${classes} ${styles}>
                             <h3>${idi.title}</h3>
-                            ${idi.image ? `<img src="${idi.image}" class="idi-item-image">` : ''}
+                            ${idi.image ? `<img src="${resolveAsset(idi.image)}" class="idi-item-image">` : ''}
                             <p>${idi.description || ''}</p>
                             ${(hasLink && !hasModal) ? '<p>(<span>Ir al artículo</span>)</p>' : ''}
                         </div>
@@ -564,8 +588,8 @@ function renderIdi(section) {
 
                 const modalContent = `
                     <div>
-                        ${idi.image ? `<img src="${idi.image}" class="modal-image" style="float: left;">` : ''}
-                        ${idi.sheet.split('\n').map(line => `<p>${line.trim()}</p>`).join('')}
+                        ${idi.image ? `<img src="${resolveAsset(idi.image)}" class="modal-image" style="float: left;">` : ''}
+                        ${renderParagraphs(idi.sheet)}
                         ${idi.link ? `<p>(<a href="${idi.link}" target="_blank" rel="noopener noreferrer">Ir al artículo</a>)</p>` : ''}
                     </div>
                 `;
@@ -580,7 +604,7 @@ function renderContact(section) {
     contactSection.id = 'contact';
     contactSection.role = 'contentinfo';
     contactSection.classList.add('bg');
-    if (section.background) contactSection.style.backgroundImage = `url(${section.background})`;
+    if (section.background) contactSection.style.backgroundImage = `url(${resolveAsset(section.background)})`;
     if (section.font) contactSection.style.color = section.font;
 
     contactSection.innerHTML = `
@@ -617,7 +641,7 @@ function renderFooter(section) {
         <div class="container">
             ${section.title ? `<h2 class="text-shadow">${section.title}</h2>` : ''}
             <div>
-                <img src="./assets/img/logos/logo.png" width="auto" height="35px" alt="Insectaria" title="Insectaria" style="max-height: 60px; height: auto;aspect-ratio: 6 / 1; max-width: calc(100% - 1rem);">
+                <img src="${getBasePath()}assets/img/logos/logo.png" width="auto" height="35px" alt="Insectaria" title="Insectaria" style="max-height: 60px; height: auto;aspect-ratio: 6 / 1; max-width: calc(100% - 1rem);">
             </div>
             ${section.text ? `<p>${section.text}</p><hl/><hr>` : ''}
             <div class="footer-list">
@@ -629,7 +653,7 @@ function renderFooter(section) {
                         }
                         
                         ${collab.image 
-                            ? `<img src="${collab.image}" alt="${collab.title}" class="footer-logo">`
+                            ? `<img src="${resolveAsset(collab.image)}" alt="${collab.title}" class="footer-logo">`
                             : ''
                         }
 
@@ -804,6 +828,170 @@ function waitForAppDataAndDOM({ timeout = 10000, interval = 20 } = {}) {
     });
 }
 
+// ============================================================
+//  Entorno y enlaces
+// ============================================================
+
+/**
+ * Devuelve "?gid=..." si estamos en entorno prototipo, "" en producción.
+ * Úsalo para construir enlaces que deben mantener el entorno.
+ */
+function getGidSuffix() {
+    const params = new URLSearchParams(window.location.search);
+    const gid = params.get("gid");
+    return gid ? `?gid=${encodeURIComponent(gid)}` : "";
+}
+
+/**
+ * Devuelve la ruta base relativa hasta la raíz del sitio.
+ * - En el index (/, /index.html)  -> "./"
+ * - En una página secundaria (/predators/foo.html) -> "../"
+ * Esto permite que los mismos assets/scripts se referencien bien
+ * desde cualquier profundidad.
+ */
+function getBasePath() {
+    const depth = window.location.pathname
+        .split("/")
+        .filter(Boolean)
+        .filter(p => !p.endsWith(".html")).length;
+    return depth === 0 ? "./" : "../".repeat(depth);
+}
+
+/**
+ * Construye un enlace a una página de detalle, propagando el ?gid=...
+ * si procede. Ejemplo: buildDetailUrl("predators", "anthocoris-nemoralis")
+ *   -> "./predators/anthocoris-nemoralis.html?gid=XXXX"
+ */
+function buildDetailUrl(collection, slug) {
+    return `${getBasePath()}${collection}/${slug}.html${getGidSuffix()}`;
+}
+
+/**
+ * Resuelve la ruta de un asset (imagen, fondo...) proveniente de los datos.
+ *  - URL absoluta (http://, https://, //...)  -> tal cual
+ *  - Absoluta al dominio (/foo.png)            -> tal cual
+ *  - Data URI (data:...)                       -> tal cual
+ *  - Relativa (assets/..., ./assets/...)       -> prefijada con getBasePath()
+ * Así funciona igual desde la home y desde /collection/slug.html.
+ */
+function resolveAsset(path) {
+    if (!path) return "";
+    const p = String(path).trim();
+    if (
+        /^(https?:)?\/\//i.test(p) ||   // http://, https://, //
+        p.startsWith("/") ||             // /ruta-absoluta
+        p.startsWith("data:")            // data URI
+    ) {
+        return p;
+    }
+    // relativa: quita "./" inicial si existe y antepone la base
+    return `${getBasePath()}${p.replace(/^\.\//, "")}`;
+}
+
+// ============================================================
+//  Detección de página actual
+// ============================================================
+
+/**
+ * Analiza la URL y devuelve:
+ *  - { type: "index" }                         si es la home
+ *  - { type: "detail", collection, slug }      si es una página de detalle
+ */
+function detectPage() {
+    const path = window.location.pathname;
+    // Buscamos patrón /<collection>/<slug>.html
+    const match = path.match(/\/([^/]+)\/([^/]+)\.html?$/i);
+    if (match) {
+        const collection = match[1].toLowerCase();
+        const slug = match[2].toLowerCase();
+        // Sólo consideramos detalle las colecciones conocidas
+        const known = ["predators", "services", "projects", "idi"];
+        if (known.includes(collection)) {
+            return { type: "detail", collection, slug };
+        }
+    }
+    return { type: "index" };
+}
+
+// ============================================================
+//  Render de páginas de detalle
+// ============================================================
+
+function slugify(text) {
+    return (text || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-");
+}
+
+function findDetailItem(collection, slug) {
+    const items = database[collection];
+    if (!Array.isArray(items)) return null;
+    return items.find(item => {
+        // Fuente de verdad: item.id (calculado al parsear los datos).
+        // Fallback al slug del name/title para compatibilidad con
+        // database.js antiguos que todavía no tengan el campo id.
+        if (item.id) return item.id === slug;
+        const key = item.name || item.title || "";
+        return slugify(key) === slug;
+    }) || null;
+}
+
+function renderDetailPage(collection, slug) {
+    if (!document.querySelector('link[data-detail-css]')) {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = `${getBasePath()}item.css`;
+        link.setAttribute("data-detail-css", "");
+        document.head.appendChild(link);
+    }
+    renderMenu();
+    const item = findDetailItem(collection, slug);
+    const main = document.createElement("section");
+    main.id = "detail";
+    main.role = "main";
+    main.classList.add("detail-page");
+    if (!item) {
+        main.innerHTML = `
+            <div class="container">
+                <h2>Contenido no encontrado</h2>
+                <p>No se ha encontrado información para <code>${collection}/${slug}</code>.</p>
+                <p><a href="${getBasePath()}${getGidSuffix()}" class="nolink">← Volver al inicio</a></p>
+            </div>
+        `;
+        document.body.appendChild(main);
+        return;
+    }
+    const title = item.name || item.title || "";
+    const subtitle = item.state || item.subtitle || "";
+    const content = item.content || "";
+    const image = resolveAsset(item.image);
+    document.title = `${title} · Insectaria`;
+    main.innerHTML = `
+        <div class="container">
+            <a href="${getBasePath()}${getGidSuffix()}" class="nolink back-link">← Volver</a>
+            ${image ? `<div class="detail-image"><img src="${image}" alt="${title}"></div>` : ""}
+            <h1 class="text-shadow"><i>${title}</i></h1>
+            ${subtitle ? `<h2>${subtitle}</h2>` : ""}
+            <div class="detail-content">${renderParagraphs(content)}</div>
+        </div>
+    `;
+    document.body.appendChild(main);
+    const footerData = database.sections?.find(s => s.id === "#footer");
+    if (footerData && database.footer) renderFooter(footerData);
+    renderModal();
+    document.querySelectorAll(".text-shadow").forEach(item => {
+        applyTextShadow(item);
+    });
+}
+
+// ============================================================
+//  Carga principal
+// ============================================================
+
 async function load() {
     try{
         const params = new URLSearchParams(window.location.search);
@@ -811,10 +999,9 @@ async function load() {
         const script = document.createElement("script");
         if (gid) {
             window.APP_GID = gid;
-            script.src = "./prototype.js";
+            script.src = `${getBasePath()}prototype.js`;
         } else {
-           
-            script.src = "./database.js";
+            script.src = `${getBasePath()}database.js`;
              /*
             document.addEventListener('contextmenu', function(e) {
                 e.preventDefault();
@@ -831,7 +1018,13 @@ async function load() {
         await waitForAppDataAndDOM();
         window.database = cleanAppData();
         //debug(window.database);
-        renderSections();
+
+        const page = detectPage();
+        if (page.type === "detail") {
+            renderDetailPage(page.collection, page.slug);
+        } else {
+            renderSections();
+        }
     }catch(err){
         console.error(err);
         document.body.innerHTML = `<div style="text-align:center;"><h2>Error al cargar datos, vuelve más tarde.</h2><h3>info@insectaria.com</h3></div>`;

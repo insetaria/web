@@ -205,6 +205,67 @@ function parseData(menu, sections, services, predators, methodology, projects, i
                 link: x["Enlace"]
             }))
     };
+
+    // Asignar un `id` único por colección. Este id se usa como slug en las
+    // URLs de detalle (/<collection>/<id>.html) y como clave para emparejar
+    // URL -> item en findDetailItem. Se construye aquí, en la capa de
+    // parseo, para que al exportar el ZIP el `database.js` resultante ya
+    // contenga el campo `id` y producción no tenga que recalcular nada.
+    assignCollectionIds("predators", window.appData.predators);
+    assignCollectionIds("services", window.appData.services);
+    assignCollectionIds("projects", window.appData.projects);
+    assignCollectionIds("idi", window.appData.idi);
+}
+
+/**
+ * Regla de composición del id por colección.
+ * Si quieres cambiar cómo se genera el id de una colección, es aquí.
+ */
+function computeId(collection, item) {
+    let raw = "";
+    switch (collection) {
+        case "predators":
+            // name + state -> "anthocoris-nemoralis-adulto"
+            raw = `${item.name || ""} ${item.state || ""}`;
+            break;
+        case "services":
+        case "projects":
+        case "idi":
+            raw = item.title || item.name || "";
+            break;
+        default:
+            raw = item.name || item.title || "";
+    }
+    return normalizeStatic(raw);
+}
+
+/**
+ * Asigna item.id a cada elemento del array, garantizando unicidad.
+ * Si detecta colisión, añade sufijo numérico y avisa por consola para
+ * que el editor de la hoja se entere de que tiene filas que chocan.
+ */
+function assignCollectionIds(collection, items) {
+    if (!Array.isArray(items)) return;
+    const seen = new Map(); // id base -> cuántas veces lo hemos visto
+    items.forEach(item => {
+        const base = computeId(collection, item);
+        if (!base) {
+            console.warn(`[ids] item sin id en "${collection}":`, item);
+            item.id = "";
+            return;
+        }
+        const count = seen.get(base) || 0;
+        if (count === 0) {
+            item.id = base;
+        } else {
+            item.id = `${base}-${count + 1}`;
+            console.warn(
+                `[ids] colisión en "${collection}": el id "${base}" ya existe. ` +
+                `Asignado "${item.id}". Revisa la hoja para asegurar unicidad.`
+            );
+        }
+        seen.set(base, count + 1);
+    });
 }
 
 function createFloatingSaveButton(appData) {
@@ -298,12 +359,18 @@ async function handleCompleteExport() {
             if (!items) continue;
 
             for (const item of items) {
-                const hasModal = item.page;
+                // Si el item declara "page", se respeta; si no, basta con tener content.
+                const hasPage = item.hasOwnProperty("page") ? item.page === true : true;
                 const hasContent = item.content && item.content.trim().length > 0;
 
-                if (!hasModal || !hasContent) continue;
+                if (!hasPage || !hasContent) continue;
 
-                const slug = normalizeStatic(item.name || item.title || "");
+                // El id se calcula al parsear los datos (en parseData) y
+                // es la única fuente de verdad para el slug del fichero.
+                // Fallback por seguridad si un item antiguo no lo tuviese.
+                const slug = item.id || normalizeStatic(item.name || item.title || "");
+                if (!slug) continue;
+
                 const html = generateStaticHTML(col.key, item);
 
                 zip.file(
@@ -384,39 +451,160 @@ function normalizeStatic(text) {
         .replace(/\s+/g, "-");
 }
 
+/**
+ * Genera una plantilla HTML "vacía" para una página secundaria.
+ * Es esencialmente un clon del index.html de la raíz: el renderizado
+ * lo hará el propio script.js al detectar la URL (pathname) y cargar
+ * database.js o prototype.js según corresponda.
+ *
+ * Usa rutas con "../" porque la página vive en /<collection>/slug.html
+ * (un nivel por debajo de la raíz).
+ */
 function generateStaticHTML(type, item) {
-    return `
-        <!DOCTYPE html>
-        <html lang="es">
-        <head>
-            <meta charset="UTF-8">
-            <title>${item.name || item.title}</title>
-            <link rel="stylesheet" href="/assets/css/info.css">
-        </head>
-        <body>
+    const title = item.name || item.title || "";
+    const description = (item.description || "").replace(/"/g, "&quot;");
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="../assets/img/logos/icon.png" rel="icon">
+    <meta name="theme-color" content="#4CAF50">
 
-            <h1>${item.name || item.title}</h1>
-            <p>${item.content}</p>
+    <title>${title} · Insectaria</title>
+    <meta name="author" content="insectaria.com">
+    <meta name="description" content="${description}">
+    <meta name="robots" content="index, follow">
 
-            <script src="/info/info.js"></script>
-        </body>
-        </html>
-    `;
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="${title}">
+    <meta property="og:description" content="${description}">
+    <meta property="og:image" content="../assets/img/logos/icon.png">
+
+    <script src="../script.js"></script>
+    <link rel="stylesheet" href="../assets/vendor/icofont/icofont.min.css">
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+</body>
+</html>`;
 }
 
 loadDataSheet();
 
-const render = renderSections;
+const prototypeModal = () => modal(
+    "Prototipo",
+    "<p><strong>Entorno de prototipado</strong></p>\
+     <p> \
+         Esta aplicación se encuentra en fase de validación funcional. \
+         Los datos mostrados pueden no ser definitivos y podrían contener inexactitudes. \
+         <strong>No debe utilizarse como referencia oficial<strong>. \
+     </p>"
+);
 
+const render = renderSections;
 renderSections = function(){
     render();
-    modal(
-  "Prototipo",
-  "<p><strong>Entorno de prototipado</strong></p>\
-   <p> \
-       Esta aplicación se encuentra en fase de validación funcional. \
-       Los datos mostrados pueden no ser definitivos y podrían contener inexactitudes. \
-       <strong>No debe utilizarse como referencia oficial<strong>. \
-   </p>"
-);
+    prototypeModal();
 }
+
+const renderDetail = renderDetailPage;
+renderDetailPage = function(collection, slug){
+    renderDetail(collection, slug);
+    prototypeModal();
+    // En modo prototipo, el "← Volver" no debe recargar una página que no
+    // existe todavía: lo redirigimos a history.back() para que use el SPA.
+    const backLink = document.querySelector(".detail-page .back-link");
+    if (backLink) {
+        backLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                // Fallback: si entró directo a /predators/xxx.html?gid=...
+                // y no hay historial, simulamos un "ir al index".
+                const target = `${getBasePath()}${getGidSuffix()}`;
+                window.history.pushState({ type: "index" }, "", target);
+                navigateSPA({ type: "index" });
+            }
+        });
+    }
+}
+
+// ============================================================
+//  Navegación SPA (solo en modo prototipo)
+//  Las páginas de detalle (/predators/xxx.html, /services/...,
+//  /projects/..., /idi/...) no existen físicamente hasta que se
+//  exporta el ZIP con el botón 💾. Para poder navegar a ellas en
+//  prototipo interceptamos window.open y pintamos el detalle en
+//  la misma URL sin recargar.
+// ============================================================
+
+const KNOWN_DETAIL_COLLECTIONS = ["predators", "services", "projects", "idi"];
+
+/**
+ * Si la URL apunta a /<collection>/<slug>.html (opcional ?gid=...),
+ * devuelve { collection, slug }. Si no, null.
+ * Acepta rutas relativas ("./predators/foo.html") o absolutas.
+ */
+function parseDetailUrl(url) {
+    if (!url) return null;
+    try {
+        const u = new URL(url, window.location.href);
+        const match = u.pathname.match(/\/([^/]+)\/([^/]+)\.html?$/i);
+        if (!match) return null;
+        const collection = match[1].toLowerCase();
+        const slug = match[2].toLowerCase();
+        if (!KNOWN_DETAIL_COLLECTIONS.includes(collection)) return null;
+        return { collection, slug, href: u.pathname + u.search };
+    } catch (_e) {
+        return null;
+    }
+}
+
+/**
+ * Limpia el body antes de repintar (secciones, footer, modal...).
+ * Respeta cualquier cosa que no sea contenido generado por los renders.
+ */
+function clearRenderedBody() {
+    document.body
+        .querySelectorAll("section, footer, #modal, #menu")
+        .forEach(el => el.remove());
+    // Resetea el CSS inyectado para el detalle, porque al volver a la
+    // home no estorba pero tampoco lo queremos duplicado al ir a otro.
+}
+
+/**
+ * Renderiza la vista correspondiente a un "page" detectado.
+ */
+function navigateSPA(page) {
+    clearRenderedBody();
+    window.scrollTo(0, 0);
+    if (page.type === "detail") {
+        renderDetailPage(page.collection, page.slug);
+    } else {
+        renderSections();
+    }
+}
+
+// 1) Interceptar window.open para URLs de detalle
+const originalWindowOpen = window.open.bind(window);
+window.open = function (url, target, features) {
+    const detail = parseDetailUrl(url);
+    if (detail) {
+        // Pushea la URL "como si" hubiéramos navegado y pinta el detalle.
+        window.history.pushState(
+            { type: "detail", collection: detail.collection, slug: detail.slug },
+            "",
+            detail.href
+        );
+        navigateSPA({ type: "detail", collection: detail.collection, slug: detail.slug });
+        return null;
+    }
+    return originalWindowOpen(url, target, features);
+};
+
+// 2) Botón atrás/adelante del navegador
+window.addEventListener("popstate", () => {
+    navigateSPA(detectPage());
+});
