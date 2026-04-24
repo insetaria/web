@@ -17,6 +17,66 @@ $width = 90
 # FUNCIONES AUXILIARES ZIP
 # ============================================================================
 
+function Ask-YesNo {
+    param(
+        [string]$Question,
+        [bool]$DefaultYes = $true
+    )
+    $selected = if ($DefaultYes) { 0 } else { 1 }  # 0 = Sí, 1 = No
+    $firstDraw = $true
+    
+    while ($true) {
+        if ($firstDraw) {
+            Write-Host ""
+            Write-Host $Question -ForegroundColor Yellow
+            $firstDraw = $false
+        } else {
+            # Subir una línea y limpiar para redibujar las opciones
+            $cursorTop = [Console]::CursorTop - 1
+            [Console]::SetCursorPosition(0, $cursorTop)
+            Write-Host (" " * [Console]::WindowWidth) -NoNewline
+            [Console]::SetCursorPosition(0, $cursorTop)
+        }
+        
+        # Dibujar opciones
+        Write-Host "  " -NoNewline
+        if ($selected -eq 0) {
+            Write-Host " Sí " -ForegroundColor Black -BackgroundColor Green -NoNewline
+        } else {
+            Write-Host " Sí " -ForegroundColor Gray -NoNewline
+        }
+        Write-Host "   " -NoNewline
+        if ($selected -eq 1) {
+            Write-Host " No " -ForegroundColor Black -BackgroundColor Red -NoNewline
+        } else {
+            Write-Host " No " -ForegroundColor Gray -NoNewline
+        }
+        Write-Host "     " -NoNewline
+        Write-Host "(← → para cambiar, Enter para confirmar)" -ForegroundColor DarkGray
+        
+        $key = [Console]::ReadKey($true)
+        switch ($key.Key) {
+            "LeftArrow"  { $selected = 0 }
+            "RightArrow" { $selected = 1 }
+            "UpArrow"    { $selected = 0 }
+            "DownArrow"  { $selected = 1 }
+            "Tab"        { $selected = 1 - $selected }
+            "Enter"      {
+                Write-Host ""
+                return ($selected -eq 0)
+            }
+            "Escape"     {
+                Write-Host ""
+                return $false
+            }
+            # Atajos de teclado
+            "S" { Write-Host ""; return $true }
+            "Y" { Write-Host ""; return $true }
+            "N" { Write-Host ""; return $false }
+        }
+    }
+}
+
 function Get-StreamHash {
     param($stream)
     $hasher = [System.Security.Cryptography.SHA256]::Create()
@@ -566,13 +626,12 @@ $zipsDisponibles = Find-ZipFiles
 if ($zipsDisponibles.Count -eq 0) {
     Write-Host "ℹ  No se han encontrado archivos .zip en el directorio actual." -ForegroundColor DarkYellow
     Write-Host "   Saltando directamente a la publicación en Git...`n" -ForegroundColor Gray
-    $ansExt = "n"
+    $quiereExtraer = $false
 } else {
-    Write-Host "¿Quieres extraer archivos de un ZIP? (S/N): " -NoNewline -ForegroundColor Yellow
-    $ansExt = Read-Host
+    $quiereExtraer = Ask-YesNo -Question "¿Quieres extraer archivos de un ZIP?" -DefaultYes $true
 }
 
-if ($ansExt -eq "s" -or $ansExt -eq "S") {
+if ($quiereExtraer) {
     try {
         $selectedZip = Select-ZipFile -zips $zipsDisponibles
         
@@ -681,9 +740,8 @@ if (-not $hayCambios) {
 }
 
 Write-Host "   $($gitChanges.Count) archivo(s) con cambios detectado(s)." -ForegroundColor Gray
-Write-Host "`n¿Deseas publicar los cambios en Git ahora? (S/N): " -NoNewline -ForegroundColor Yellow
-$ansGit = Read-Host
-if ($ansGit -eq "s" -or $ansGit -eq "S") {
+$quierePublicar = Ask-YesNo -Question "¿Deseas publicar los cambios en Git ahora?" -DefaultYes $true
+if ($quierePublicar) {
     Publish-ToGit
 } else {
     Write-Host "`nSaliendo..." -ForegroundColor Gray
