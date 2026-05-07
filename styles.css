@@ -445,8 +445,9 @@ a.nolink {
 }
 .footer-list {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 1rem;
+    flex-wrap: wrap;
 }
 
 .footer-row {
