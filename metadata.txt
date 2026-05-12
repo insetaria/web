@@ -1,0 +1,20 @@
+# ── Metadatos IPTC / XMP ─────────────────
+# Insectaria multimedia metadata template
+# ────────────────────────────────────────
+
+Copyright Notice: © 2025 Insectaria. All rights reserved.
+Creator / Author: Insectaria
+Credit Line: Insectaria
+Rights Usage Terms: No reproduction, redistribution, scraping, commercial use, or modification permitted. AI Training Prohibited. Do Not Train.
+Web Statement of Rights: https://www.insectaria.com/rights
+Licensor URL: https://www.insectaria.com
+Source: insectaria.com
+
+# Contact
+Contact Email: info@insectaria.com
+Contact Web: https://www.insectaria.com
+# Contact Phone: 
+Contact Address: C. Calahorra, 2, Nave 7, 26006 Varea - Logroño, La Rioja
+
+# Custom fields
+# Key : value

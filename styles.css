@@ -195,9 +195,22 @@ a.nolink {
     overflow-wrap: break-word;
     word-break: break-word;
 }
+.where-content h3 {
+    font-size: 170%;
+    max-width: 1200px;
+}
 .about-content h3 {
     font-size: 170%;
     max-width: 1200px;
+}
+.crops-content {
+    display: flex;
+    flex-direction: row;
+}
+.crop-entry img {
+    width: 250px;
+    max-width: 80%;
+    aspect-ratio: 1 / 1;
 }
 .methodology-content{
     max-width: 1200px;

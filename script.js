@@ -211,6 +211,84 @@ function renderHero(section) {
     }
 }
 
+function renderWhere(section) {
+    const whereSection = document.getElementById('where') || document.createElement('section');
+
+    whereSection.id = 'where';
+    whereSection.role = 'contentinfo';
+
+    if (section.background) {
+        whereSection.style.backgroundColor = section.background;
+    }
+
+    if (section.font) {
+        whereSection.style.color = section.font;
+    }
+
+    whereSection.innerHTML = `
+        <div class="container">
+            <div class="where-content">
+
+                ${section.title ? `<h2 class="text-shadow">${section.title}</h2>` : ''}
+                
+                <div class="description">
+                    ${section.subtitle ? `<h3>${section.subtitle}</h3>` : ''}
+                    ${section.text ? `<h4>${section.text}</h4>` : ''}
+                </div>
+
+                ${database.crops && database.crops.length > 0 ?
+                    `<div class="crops-content">
+                        ${database.crops.map(crop => `
+                            <div class="crop-entry">
+
+                                ${crop.image ? `
+                                    <img
+                                        src="${resolveAsset(crop.image)}"
+                                        alt="${crop.title}"
+                                        class="crop-image"
+                                    >
+                                ` : ''}
+
+                                <h4>${crop.title}</h4>
+
+                            </div>
+                        `).join('')}
+                    </div>`
+                : ''}
+
+            </div>
+        </div>
+    `;
+
+    if (!document.getElementById('where')) {
+        document.body.append(whereSection);
+    }
+
+    const cards = whereSection.querySelectorAll('.crop-entry');
+
+    cards.forEach((card, index) => {
+        const crop = database.crops[index];
+
+        if (crop.modal && crop.sheet) {
+            card.style.cursor = 'pointer';
+
+            card.addEventListener('click', () => {
+                const modalContent = `
+                    <div>
+                        ${(crop.modalImage || crop.image)
+                            ? `<img src="${resolveAsset(crop.modalImage || crop.image)}" class="modal-image" style="float:left;">`
+                            : ''
+                        }
+                        ${renderParagraphs(crop.sheet)}
+                    </div>
+                `;
+
+                modal(crop.title, modalContent);
+            });
+        }
+    });
+}
+
 function renderAbout(section) {
     const aboutSection = document.getElementById('about') || document.createElement('section');
     aboutSection.id = 'about';
@@ -237,9 +315,6 @@ function renderAbout(section) {
             }
         </div>
     `;
-    if (section.font) {
-        aboutSection.style.color = section.font;
-    }
     if (!document.getElementById('about')) {
         document.body.append(aboutSection);
     }
@@ -282,7 +357,6 @@ function renderServices(section) {
 
     const cards = servicesSection.querySelectorAll('.service-card');
 
-    // 👉 Añadir comportamiento modal (sin duplicar queries)
     cards.forEach((wrapper, index) => {
         const card = wrapper.querySelector('.card');
         const service = database.services[index];
@@ -643,6 +717,7 @@ function renderFooter(section) {
             <div>
                 <img src="${getBasePath()}assets/img/logos/logo.png" width="auto" height="35px" alt="Insectaria" title="Insectaria" style="max-height: 60px; height: auto;aspect-ratio: 6 / 1; max-width: calc(100% - 1rem);">
             </div>
+            ${section.subtitle ? `<h3>${section.subtitle}</h3>` : ''}
             ${section.text ? `<p>${section.text}</p><hl/><hr>` : ''}
             <div class="footer-list">
                 ${database.footer.map(collab => `
@@ -651,26 +726,23 @@ function renderFooter(section) {
                             ? `<a href="${collab.link}" target="_blank" rel="noopener noreferrer" class="nolink">`
                             : ''
                         }
-                        
                         ${collab.image 
                             ? `<img src="${resolveAsset(collab.image)}" alt="${collab.title}" class="footer-logo">`
                             : ''
                         }
-
                         ${collab.title
                             ? `<p class="footer-title">${collab.title || ''}</p>`
                             : ''
                         }
-
                         ${collab.description 
                             ? `<p class="footer-description">${collab.description}</p>`
                             : ''
                         }
-
                         ${collab.link ? `</a>` : ''}
                     </div>
                 `).join('')}
             </div>
+            
         </div>
     `;
 
@@ -741,6 +813,9 @@ function renderSections() {
     
     const heroData = database.sections.find(s => s.id === "#hero");
     if (heroData) renderHero(heroData);
+
+    const where = database.sections.find(s => s.id === "#where");
+    if (where) renderWhere(where);
 
     const aboutData = database.sections.find(s => s.id === "#about");
     if (aboutData) renderAbout(aboutData);

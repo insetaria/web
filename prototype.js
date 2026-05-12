@@ -91,7 +91,7 @@ async function loadDataSheet() {
     const ds = await buildDataStructure();
     if(ds){
         try {
-            const [a, b, c, d, e, f, g, h] = await Promise.all([
+            const [a, b, c, d, e, f, g, h, i] = await Promise.all([
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.menu.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.sections.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.services.gid),
@@ -100,8 +100,9 @@ async function loadDataSheet() {
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.projects.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.idi.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.footer.gid),
+                fetchGoogleSheetsCSVAsJson(ds.gid, ds.crops.gid),
             ]);
-            parseData(a, b, c, d, e, f, g, h);
+            parseData(a, b, c, d, e, f, g, h, i);
             createFloatingSaveButton(window.appData);
         } catch (e) {
             console.error("Error cargando base de datos:", e);
@@ -110,7 +111,7 @@ async function loadDataSheet() {
     document.dispatchEvent(new Event("appDataReady"));
 }
 
-function parseData(menu, sections, services, predators, methodology, projects, idi, footer) {
+function parseData(menu, sections, services, predators, methodology, projects, idi, footer, crops) {
     window.appData = {
         menu: menu
             .filter(x => isEnabled(x["Habilitado"]))
@@ -132,6 +133,22 @@ function parseData(menu, sections, services, predators, methodology, projects, i
                 link: x["Enlace"],
                 id: x["Clave"]
             })),
+        crops: crops
+            .filter(x => isEnabled(x["Habilitado"]))
+            .map(x => {
+                const hasModal = String(x["Modal"] ?? "").trim().toLowerCase() === "si";
+
+                return {
+                    enabled: x["Habilitado"],
+                    title: x["Título"],
+                    text: x["Texto"],
+                    pests: x["Plagas"],
+                    image: x["Imagen"],
+                    modal: hasModal,
+                    modalImage: hasModal ? (x["ImagenModal"] ?? "") : "",
+                    sheet: hasModal ? (x["Ficha"] ?? "") : "",
+                };
+            }),
         methodology: methodology
             .filter(x => isEnabled(x["Habilitado"]))
             .map(x => ({
@@ -211,6 +228,7 @@ function parseData(menu, sections, services, predators, methodology, projects, i
     // URL -> item en findDetailItem. Se construye aquí, en la capa de
     // parseo, para que al exportar el ZIP el `database.js` resultante ya
     // contenga el campo `id` y producción no tenga que recalcular nada.
+    assignCollectionIds("crops", window.appData.crops);
     assignCollectionIds("predators", window.appData.predators);
     assignCollectionIds("services", window.appData.services);
     assignCollectionIds("projects", window.appData.projects);
@@ -224,6 +242,9 @@ function parseData(menu, sections, services, predators, methodology, projects, i
 function computeId(collection, item) {
     let raw = "";
     switch (collection) {
+        case "crops":
+            raw = item.title || "";
+            break;
         case "predators":
             // name + state -> "anthocoris-nemoralis-adulto"
             raw = `${item.name || ""} ${item.state || ""}`;
@@ -351,7 +372,8 @@ async function handleCompleteExport() {
         const collections = [
             { key: "predators", basePath: "predators" },
             { key: "services", basePath: "services" },
-            { key: "projects", basePath: "projects" }
+            { key: "projects", basePath: "projects" },
+            { key: "crops", basePath: "crops" }
         ];
 
         for (const col of collections) {
@@ -540,7 +562,13 @@ renderDetailPage = function(collection, slug){
 //  la misma URL sin recargar.
 // ============================================================
 
-const KNOWN_DETAIL_COLLECTIONS = ["predators", "services", "projects", "idi"];
+const KNOWN_DETAIL_COLLECTIONS = [
+    "predators",
+    "services",
+    "projects",
+    "idi",
+    "crops"
+];
 
 /**
  * Si la URL apunta a /<collection>/<slug>.html (opcional ?gid=...),
