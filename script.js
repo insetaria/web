@@ -472,19 +472,23 @@ function renderPredators(section) {
                         return `<tr>${cells}</tr>`;
                     }).join('');
                     priceTable = `
+                        <br/><hr/>
                         <table class="price-table">
                             <tbody class="price-table-body">
                                 ${tableRows}
                             </tbody>
-                        </table>`;
+                        </table>
+                        <br/>
+                    `;
+                        
                 }
                 const modalContent = `
                     <div>
                         <div class="predator-graphic-info">
                             <img src="${resolveAsset(predator.image)}" class="modal-image">
-                            ${priceTable}
                         </div>
-                        ${predator.sheet ? renderParagraphs(predator.sheet) : ''}
+                        ${predator.sheet ? '<br/><hr/>' + renderParagraphs(predator.sheet) : ''}
+                        ${priceTable}
                     </div>
                 `;
                 modal(`<i>${predator.name}</i> - ${predator.state}`, modalContent);
