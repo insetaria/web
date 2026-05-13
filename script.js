@@ -275,7 +275,7 @@ function renderWhere(section) {
 
         if (crop.modal && crop.sheet) {
             card.style.cursor = 'pointer';
-
+            card.classList.add('hoverable');
             card.addEventListener('click', () => {
                 const modalContent = `
                     <div>
