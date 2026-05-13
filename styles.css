@@ -196,7 +196,17 @@ a.nolink {
     word-break: break-word;
 }
 .crops-content > *:not(:first-child) {
-  border-left: 1px solid #d5d5d5;
+    position: relative;
+    padding-left: 16px;
+}
+.crops-content > *:not(:first-child):before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 20%;
+    height: 60%;
+    width: 3px;
+    background: linear-gradient(to bottom, transparent, #d5d5d5, transparent);
 }
 .where-content h3 {
     font-size: 170%;
