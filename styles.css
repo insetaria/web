@@ -195,7 +195,7 @@ a.nolink {
     overflow-wrap: break-word;
     word-break: break-word;
 }
-.where-content > *:not(:first-child) {
+.crops-content > *:not(:first-child) {
   border-left: 1px solid #d5d5d5;
 }
 .where-content h3 {
