@@ -136,8 +136,6 @@ function renderMenu() {
                         if(item.link){
                             const isExternal = item.link.startsWith('http');
                             const isAnchor = item.link.startsWith('#');
-                            // Desde una página de detalle, las anclas deben
-                            // apuntar a la home + ancla, conservando el gid.
                             const isDetail = detectPage().type === "detail";
                             let finalHref = item.link;
                             if (isAnchor && isDetail) {
@@ -199,7 +197,13 @@ function renderHero(section) {
             <a class="nolink" ${section.link ? `onclick="smoothScroll('${section.link}')"` : ''}>
                 <h1>${section.title}</h1>
                 <h2>${section.subtitle}</h2>
-                <h3>${section.text}</h3>
+                ${section.text
+                    .split('\n')
+                    .map(line => line.trim())
+                    .filter(Boolean)
+                    .map(line => `<h3>${line}</h3>`)
+                    .join('')
+                }
             </a>
         </div>
     `;
@@ -432,7 +436,6 @@ function renderPredators(section) {
             </div>
             <div class="grid">
                 ${database.predators.map((predator, index) => {
-                    // Condición original para modal + Nueva condición para página externa
                     const hasModal = predator.modal && (predator.sheet || predator.price);
                     const hasExternalPage = predator.page === true && predator.content;
                     const isClickable = hasModal || hasExternalPage;
