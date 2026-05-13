@@ -212,7 +212,7 @@ a.nolink {
     max-width: 80%;
     aspect-ratio: 1 / 1;
 }
-img.crop-image.hoverable:hover {
+.hoverable img.crop-image:hover {
     filter: drop-shadow(0 0 6px rgba(120, 120, 120, 0.75));
 }
 .methodology-content{
