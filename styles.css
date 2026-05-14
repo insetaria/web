@@ -195,11 +195,16 @@ a.nolink {
     overflow-wrap: break-word;
     word-break: break-word;
 }
+#where .description > * {
+    margin-left: auto;
+    max-width: 1200px;
+    margin-right: auto;
+}
 #where h3 {
     font-size: 150%;
-    max-width: 1200px;
     margin-top: 0;
 }
+
 .crops-content {
     position: relative;
     width: 100%;

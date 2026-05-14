@@ -235,7 +235,7 @@ function renderWhere(section) {
                 
             <div class="description">
                 ${section.subtitle ? `<h3>${section.subtitle}</h3>` : ''}
-                ${section.text ? `<h4>${section.text}</h4>` : ''}
+                ${section.text ? `<p>${section.text}</p>` : ''}
             </div>
             <div class="where-content">
 
