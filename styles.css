@@ -195,35 +195,67 @@ a.nolink {
     overflow-wrap: break-word;
     word-break: break-word;
 }
+#where h3 {
+    font-size: 150%;
+    max-width: 1200px;
+    margin-top: 0;
+}
 .crops-content {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: stretch;
-    gap: 1rem;
+    position: relative;
     width: 100%;
     max-width: 1200px;
+    margin: 0 auto;
+    overflow: hidden;
+    --visible: 5;
+    --gap: 1rem;
+    cursor: grab;
+    user-select: none;
+}
+
+.crops-content.dragging {
+    cursor: grabbing;
+}
+
+.crops-track {
+    display: flex;
+    gap: var(--gap);
+    transition: transform 0.6s ease;
+    will-change: transform;
+}
+
+.crops-content.dragging .crops-track {
+    transition: none;
 }
 
 .crop-entry {
-    flex: 1 1 0;
-    min-width: 200px;
-    max-width: 280px;
+    flex: 0 0 calc((100% - (var(--visible) - 1) * var(--gap)) / var(--visible));
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
     padding: 1rem;
-    box-sizing: border-box;
+    position: relative;
+}
+
+.crop-entry:not(:first-child)::before {
+    content: "";
+    position: absolute;
+    left: calc(var(--gap) / -2 - 1.5px);
+    top: 10%;
+    height: 80%;
+    width: 3px;
+    background: linear-gradient(to bottom, transparent, #d5d5d5, transparent);
 }
 
 .crop-entry img.crop-image {
+    pointer-events: none;
     width: 100%;
     max-width: 250px;
     aspect-ratio: 1 / 1;
     object-fit: contain;
     display: block;
+    transition: filter 0.3s ease;
 }
 
 .crop-entry h4 {
@@ -236,34 +268,30 @@ a.nolink {
 
 .crop-entry p {
     margin: 0.25rem 0;
-    text-align: left;
-    width: 100%;
 }
 
-.crops-content > *:not(:first-child) {
-    position: relative;
-    padding-left: 16px;
+.hoverable {
+    transition: transform 0.3s ease;
+    cursor: pointer;
 }
-.crops-content > *:not(:first-child)::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 10%;
-    height: 80%;
-    width: 3px;
-    background: linear-gradient(to bottom, transparent, #d5d5d5, transparent);
+.hoverable:hover {
+    transform: translateY(-4px);
 }
-.where-content h3 {
-    font-size: 170%;
-    max-width: 1200px;
+.hoverable:hover img.crop-image {
+    filter: drop-shadow(0 0 6px rgba(120, 120, 120, 0.75));
 }
+
+@media (max-width: 1200px) {
+    .crops-content { --visible: 4; }
+}
+@media (max-width: 850px) {
+    .crops-content { --visible: 3; }
+}
+
+
 .about-content h3 {
     font-size: 170%;
     max-width: 1200px;
-}
-.crops-content {
-    display: flex;
-    flex-direction: row;
 }
 .crop-entry img {
     width: 250px;

@@ -231,31 +231,34 @@ function renderWhere(section) {
 
     whereSection.innerHTML = `
         <div class="container">
+            ${section.title ? `<h2 class="text-shadow">${section.title}</h2>` : ''}
+                
+            <div class="description">
+                ${section.subtitle ? `<h3>${section.subtitle}</h3>` : ''}
+                ${section.text ? `<h4>${section.text}</h4>` : ''}
+            </div>
             <div class="where-content">
 
-                ${section.title ? `<h2 class="text-shadow">${section.title}</h2>` : ''}
                 
-                <div class="description">
-                    ${section.subtitle ? `<h3>${section.subtitle}</h3>` : ''}
-                    ${section.text ? `<h4>${section.text}</h4>` : ''}
-                </div>
 
                 ${database.crops && database.crops.length > 0 ?
                     `<div class="crops-content">
-                        ${database.crops.map(crop => `
-                            <div class="crop-entry">
-
-                                ${crop.image ? `
-                                    <img
-                                        src="${resolveAsset(crop.image)}"
-                                        alt="${crop.title}"
-                                        class="crop-image"
-                                    >` : ''
-                                }
-                                <h4>${crop.title}</h4>
-                                ${crop.text ? ` <p>${crop.text}</p>` : ''}
-                            </div>
-                        `).join('')}
+                        <div class="crops-track">
+                            ${database.crops.map(crop => `
+                                <div class="crop-entry">
+                                    ${crop.image ? `
+                                        <img
+                                            src="${resolveAsset(crop.image)}"
+                                            alt="${crop.title}"
+                                            class="crop-image"
+                                        >` : ''
+                                    }
+                                    <h4>${crop.title}</h4>
+                                    ${crop.text ? ` <p>${crop.text}</p>` : ''}
+                                    ${crop.pests ? ` <p>${renderParagraphs(crop.pests)}</p>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>`
                 : ''}
 
@@ -290,6 +293,208 @@ function renderWhere(section) {
             });
         }
     });
+
+    initCropsCarousel(whereSection);
+}
+
+function initCropsCarousel(scope) {
+    const container = scope.querySelector('.crops-content');
+    const track = scope.querySelector('.crops-track');
+    if (!container || !track) return;
+
+    const entries = Array.from(track.children);
+    if (entries.length === 0) return;
+
+    const total = entries.length;
+    let index = 0;
+    let currentX = 0;
+    let intervalId = null;
+    let isActive = false;
+
+    function getVisible() {
+        const v = getComputedStyle(container).getPropertyValue('--visible').trim();
+        return parseInt(v, 10) || 1;
+    }
+
+    function shouldBeActive() {
+        return total > getVisible();
+    }
+
+    function attachClickListener(node, crop) {
+        if (crop && crop.modal && crop.sheet) {
+            node.style.cursor = 'pointer';
+            node.classList.add('hoverable');
+            node.addEventListener('click', () => {
+                const modalContent = `
+                    <div>
+                        ${(crop.modalImage || crop.image)
+                            ? `<img src="${resolveAsset(crop.modalImage || crop.image)}" class="modal-image" style="float:left;">`
+                            : ''
+                        }
+                        ${renderParagraphs(crop.sheet)}
+                    </div>
+                `;
+                modal(crop.title, modalContent);
+            });
+        }
+    }
+
+    function getStep() {
+        const first = track.children[total];
+        const second = track.children[total + 1];
+        if (!first) return 0;
+        if (!second) return first.offsetWidth;
+        return second.offsetLeft - first.offsetLeft;
+    }
+
+    function basePosition() {
+        return -getStep() * total;
+    }
+
+    function setX(x, animated = true) {
+        currentX = x;
+        track.style.transition = animated ? 'transform 0.6s ease' : 'none';
+        track.style.transform = `translateX(${x}px)`;
+    }
+
+    function goToIndex(i, animated = true) {
+        index = i;
+        setX(basePosition() - getStep() * index, animated);
+    }
+
+    function advance() {
+        goToIndex(index + 1, true);
+    }
+
+    function start() {
+        stop();
+        intervalId = setInterval(advance, 4000);
+    }
+
+    function stop() {
+        if (intervalId) { clearInterval(intervalId); intervalId = null; }
+    }
+
+    function activate() {
+        if (isActive) return;
+        isActive = true;
+
+        const clonesEnd = entries.map(e => e.cloneNode(true));
+        const clonesStart = entries.map(e => e.cloneNode(true));
+        clonesEnd.forEach(c => track.appendChild(c));
+        clonesStart.reverse().forEach(c => track.insertBefore(c, track.firstChild));
+
+        clonesEnd.forEach((node, i) => attachClickListener(node, database.crops[i]));
+        clonesStart.forEach((node, i) => attachClickListener(node, database.crops[entries.length - 1 - i]));
+
+        container.style.cursor = 'grab';
+        container.style.userSelect = 'none';
+
+        requestAnimationFrame(() => {
+            setX(basePosition(), false);
+            start();
+        });
+    }
+
+    function deactivate() {
+        if (!isActive) return;
+        isActive = false;
+        stop();
+
+        Array.from(track.children).forEach(child => {
+            if (!entries.includes(child)) track.removeChild(child);
+        });
+
+        index = 0;
+        track.style.transition = 'none';
+        track.style.transform = 'translateX(0px)';
+        currentX = 0;
+
+        container.style.cursor = '';
+        container.style.userSelect = '';
+    }
+
+    function evaluate() {
+        if (shouldBeActive()) {
+            activate();
+        } else {
+            deactivate();
+        }
+    }
+
+    track.addEventListener('transitionend', () => {
+        if (!isActive) return;
+        if (index >= total) {
+            index = 0;
+            setX(basePosition(), false);
+        } else if (index < 0) {
+            index = total - 1;
+            setX(basePosition() - getStep() * index, false);
+        }
+    });
+
+    // --- Drag ---
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartTranslate = 0;
+    let suppressNextClick = false;
+
+    function onDragStart(clientX) {
+        if (!isActive) return;
+        isDragging = true;
+        dragStartX = clientX;
+        dragStartTranslate = currentX;
+        container.classList.add('dragging');
+        stop();
+    }
+
+    function onDragMove(clientX) {
+        if (!isActive || !isDragging) return;
+        const delta = clientX - dragStartX;
+        if (Math.abs(delta) > 3) {
+            suppressNextClick = true;
+        }
+        setX(dragStartTranslate + delta, false);
+    }
+
+    function onDragEnd() {
+        if (!isActive || !isDragging) return;
+        isDragging = false;
+        container.classList.remove('dragging');
+
+        const step = getStep();
+        const offset = currentX - basePosition();
+        let newIndex = Math.round(-offset / step);
+        goToIndex(newIndex, true);
+
+        start();
+    }
+
+    container.addEventListener('click', (e) => {
+        if (suppressNextClick) {
+            e.preventDefault();
+            e.stopPropagation();
+            suppressNextClick = false;
+        }
+    }, true);
+
+    container.addEventListener('mousedown', (e) => onDragStart(e.clientX));
+    window.addEventListener('mousemove', (e) => onDragMove(e.clientX));
+    window.addEventListener('mouseup', onDragEnd);
+
+    container.addEventListener('touchstart', (e) => onDragStart(e.touches[0].clientX), { passive: true });
+    container.addEventListener('touchmove', (e) => onDragMove(e.touches[0].clientX), { passive: true });
+    container.addEventListener('touchend', onDragEnd);
+
+    container.addEventListener('mouseenter', () => { if (isActive && !isDragging) stop(); });
+    container.addEventListener('mouseleave', () => { if (isActive && !isDragging) start(); });
+
+    window.addEventListener('resize', () => {
+        evaluate();
+        if (isActive) setX(basePosition() - getStep() * index, false);
+    });
+
+    evaluate();
 }
 
 function renderAbout(section) {
