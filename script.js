@@ -254,8 +254,7 @@ function renderWhere(section) {
                                         >` : ''
                                     }
                                     <h4>${crop.title}</h4>
-                                    ${crop.text ? ` <p>${crop.text}</p>` : ''}
-                                    ${crop.pests ? ` <p>${renderParagraphs(crop.pests)}</p>` : ''}
+                                    ${crop.text ? ` <p>${renderParagraphs(crop.text)}</p>` : ''}
                                 </div>
                             `).join('')}
                         </div>
