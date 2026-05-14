@@ -243,6 +243,8 @@ a.nolink {
     position: relative;
 }
 
+
+
 .crop-entry:not(:first-child)::before {
     content: "";
     position: absolute;
@@ -272,6 +274,8 @@ a.nolink {
 }
 
 .crop-entry p {
+    text-align: left;
+    width: 100%;
     margin: 0.25rem 0;
 }
 
