@@ -142,7 +142,6 @@ function parseData(menu, sections, services, predators, methodology, projects, i
                     enabled: x["Habilitado"],
                     title: x["Título"],
                     text: x["Texto"],
-                    pests: x["Plagas"],
                     image: x["Imagen"],
                     modal: hasModal,
                     modalImage: hasModal ? (x["ImagenModal"] ?? "") : "",

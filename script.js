@@ -250,11 +250,10 @@ function renderWhere(section) {
                                         src="${resolveAsset(crop.image)}"
                                         alt="${crop.title}"
                                         class="crop-image"
-                                    >
-                                ` : ''}
-
+                                    >` : ''
+                                }
                                 <h4>${crop.title}</h4>
-
+                                ${crop.text ? ` <p>${crop.text}</p>` : ''}
                             </div>
                         `).join('')}
                     </div>`

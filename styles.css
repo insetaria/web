@@ -195,16 +195,61 @@ a.nolink {
     overflow-wrap: break-word;
     word-break: break-word;
 }
+.crops-content {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: stretch;
+    gap: 1rem;
+    width: 100%;
+    max-width: 1200px;
+}
+
+.crop-entry {
+    flex: 1 1 0;
+    min-width: 200px;
+    max-width: 280px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+.crop-entry img.crop-image {
+    width: 100%;
+    max-width: 250px;
+    aspect-ratio: 1 / 1;
+    object-fit: contain;
+    display: block;
+}
+
+.crop-entry h4 {
+    margin: 1rem 0 0.5rem 0;
+    min-height: 2.5em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.crop-entry p {
+    margin: 0.25rem 0;
+    text-align: left;
+    width: 100%;
+}
+
 .crops-content > *:not(:first-child) {
     position: relative;
     padding-left: 16px;
 }
-.crops-content > *:not(:first-child):before {
+.crops-content > *:not(:first-child)::before {
     content: "";
     position: absolute;
     left: 0;
-    top: 20%;
-    height: 60%;
+    top: 10%;
+    height: 80%;
     width: 3px;
     background: linear-gradient(to bottom, transparent, #d5d5d5, transparent);
 }
@@ -225,8 +270,17 @@ a.nolink {
     max-width: 80%;
     aspect-ratio: 1 / 1;
 }
-.hoverable img.crop-image:hover {
+.crop-entry img.crop-image {
+    transition: filter 0.3s ease;
+}
+.hoverable:hover img.crop-image {
     filter: drop-shadow(0 0 6px rgba(120, 120, 120, 0.75));
+}
+.hoverable {
+    transition: transform 0.3s ease;
+}
+.hoverable:hover {
+    transform: translateY(-4px);
 }
 .methodology-content{
     max-width: 1200px;
