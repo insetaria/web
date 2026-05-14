@@ -566,6 +566,7 @@ a.nolink {
     flex-direction: row;
     gap: 1rem;
     flex-wrap: wrap;
+    justify-content: space-evenly;
 }
 
 .footer-row {

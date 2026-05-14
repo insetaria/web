@@ -232,15 +232,11 @@ function renderWhere(section) {
     whereSection.innerHTML = `
         <div class="container">
             ${section.title ? `<h2 class="text-shadow">${section.title}</h2>` : ''}
-                
             <div class="description">
                 ${section.subtitle ? `<h3>${section.subtitle}</h3>` : ''}
                 ${section.text ? `<p>${section.text}</p>` : ''}
             </div>
             <div class="where-content">
-
-                
-
                 ${database.crops && database.crops.length > 0 ?
                     `<div class="crops-content">
                         <div class="crops-track">
@@ -260,7 +256,6 @@ function renderWhere(section) {
                         </div>
                     </div>`
                 : ''}
-
             </div>
         </div>
     `;
