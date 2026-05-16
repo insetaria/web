@@ -385,7 +385,7 @@ function initCropsCarousel(scope) {
         container.style.userSelect = 'none';
 
         requestAnimationFrame(() => {
-            setX(basePosition(), false);
+            setX(basePosition() - getStep() * index, false);
             start();
         });
     }
@@ -484,8 +484,11 @@ function initCropsCarousel(scope) {
     container.addEventListener('mouseleave', () => { if (isActive && !isDragging) start(); });
 
     window.addEventListener('resize', () => {
+        const wasActive = isActive;
         evaluate();
-        if (isActive) setX(basePosition() - getStep() * index, false);
+        if (isActive && wasActive) {
+            setX(basePosition() - getStep() * index, false);
+        }
     });
 
     evaluate();

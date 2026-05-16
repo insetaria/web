@@ -205,6 +205,10 @@ a.nolink {
     margin-top: 0;
 }
 
+.where-content {
+    width: 100%;
+    box-sizing: border-box;
+}
 .crops-content {
     position: relative;
     width: 100%;
@@ -241,6 +245,7 @@ a.nolink {
     text-align: center;
     padding: 1rem;
     position: relative;
+    min-width: 0;
 }
 
 
@@ -295,6 +300,9 @@ a.nolink {
 }
 @media (max-width: 850px) {
     .crops-content { --visible: 3; }
+}
+@media (max-width: 650px) {
+    .crops-content { --visible: 1; }
 }
 
 
