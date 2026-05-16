@@ -304,6 +304,9 @@ function initCropsCarousel(scope) {
     let currentX = 0;
     let intervalId = null;
     let isActive = false;
+    let isHovering = false;
+    let isTabVisible = !document.hidden;
+    let isInViewport = false;
 
     function getVisible() {
         const v = getComputedStyle(container).getPropertyValue('--visible').trim();
@@ -362,7 +365,9 @@ function initCropsCarousel(scope) {
 
     function start() {
         stop();
-        intervalId = setInterval(advance, 4000);
+        if (isActive && !isDragging && !isHovering && isTabVisible && isInViewport) {
+            intervalId = setInterval(advance, 4000);
+        }
     }
 
     function stop() {
@@ -480,8 +485,25 @@ function initCropsCarousel(scope) {
     container.addEventListener('touchmove', (e) => onDragMove(e.touches[0].clientX), { passive: true });
     container.addEventListener('touchend', onDragEnd);
 
-    container.addEventListener('mouseenter', () => { if (isActive && !isDragging) stop(); });
-    container.addEventListener('mouseleave', () => { if (isActive && !isDragging) start(); });
+    container.addEventListener('mouseenter', () => { isHovering = true; if (isActive && !isDragging) stop(); });
+    container.addEventListener('mouseleave', () => { isHovering = false; if (isActive && !isDragging) start(); });
+
+    document.addEventListener('visibilitychange', () => {
+        isTabVisible = !document.hidden;
+        if (isActive) {
+            if (isTabVisible) start();
+            else stop();
+        }
+    });
+
+    const observer = new IntersectionObserver(([entry]) => {
+        isInViewport = entry.isIntersecting;
+        if (isActive) {
+            if (isInViewport) start();
+            else stop();
+        }
+    }, { threshold: 0, rootMargin: '-80px 0px -80px 0px' });
+    observer.observe(container);
 
     window.addEventListener('resize', () => {
         const wasActive = isActive;
