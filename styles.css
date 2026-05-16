@@ -369,7 +369,8 @@ a.nolink {
     align-self: center;
     margin-top: 20px;
     font-size: 4.5rem;
-    box-shadow: rgba(0, 0, 0, 0.1) 0px 2px 15px;
+    background: rgba(0, 0, 0, 0.05);
+    box-shadow: rgb(0 0 0 / 15%) 0px 2px 15px;
     border-radius: 50%;
     box-sizing: border-box;
 }
