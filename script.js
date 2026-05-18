@@ -681,7 +681,7 @@ function renderModalImageBlock(defaultImage, modalImages, alt) {
         }
     }
     
-    // SVGs limpios, definidos solo una vez
+    // SVGs limpios para las flechas
     const expandIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-expand"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M20.25 20.25v-4.5m0 4.5h-4.5m4.5 0l-5.25-5.25" /></svg>`;
     const shrinkIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-shrink"><path stroke-linecap="round" stroke-linejoin="round" d="M9 3.75v4.5m0 0H4.5m4.5 0L3.75 3.75M15 20.25v-4.5m0 0h4.5m-4.5 0l5.25 5.25" /></svg>`;
 
@@ -689,24 +689,14 @@ function renderModalImageBlock(defaultImage, modalImages, alt) {
         <div class="modal-image-container">
             <div class="modal-image-rel-wrapper">
                 <img src="${mainImageSrc}" alt="${alt || 'Modal Image'}" class="modal-image" />
-                <button class="modal-resize-btn" id="modalResizeButton">
+                
+                <button class="modal-resize-btn" onclick="this.closest('.modal-image-container').classList.toggle('is-expanded')">
                     ${expandIconSVG}
                     ${shrinkIconSVG}
                 </button>
             </div>
             ${thumbnailsHTML ? `<div class="modal-thumbnails-gallery">${thumbnailsHTML}</div>` : ''}
         </div>
-        <script>
-            (function() {
-                const resizeButton = document.getElementById('modalResizeButton');
-                if (resizeButton) {
-                    resizeButton.addEventListener('click', function() {
-                        const container = this.closest('.modal-image-container');
-                        container.classList.toggle('is-expanded');
-                    });
-                }
-            })();
-        </script>
     `;
     return imageBlock;
 }
