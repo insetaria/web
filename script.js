@@ -655,37 +655,58 @@ function renderModalImageBlock(defaultImage, modalImages, alt) {
             mainImageSrc = resolveAsset(modalImagesArray[0]);
         }
         if (modalImagesArray.length > 1) {
-        thumbnailsHTML = modalImagesArray
-            .map((src, index) => {
-                const isActive = index === 0 ? 'active' : '';
-                return `
-                <div class="modal-thumbnail-wrapper ${isActive}" 
-                    onclick="
-                        const container = this.closest('.modal-image-container');
-                        const mainImg = container.querySelector('.modal-image');
-                        const childImg = this.querySelector('.modal-thumbnail');
-                        
-                        if (childImg && mainImg.src !== childImg.src) {
-                            const currentActive = container.querySelector('.modal-thumbnail-wrapper.active');
-                            if (currentActive) currentActive.classList.remove('active');
+            thumbnailsHTML = modalImagesArray
+                .map((src, index) => {
+                    const isActive = index === 0 ? 'active' : '';
+                    return `
+                    <div class="modal-thumbnail-wrapper ${isActive}" 
+                        onclick="
+                            const container = this.closest('.modal-image-container');
+                            const mainImg = container.querySelector('.modal-image');
+                            const childImg = this.querySelector('.modal-thumbnail');
                             
-                            this.classList.add('active');
-                            mainImg.src = childImg.src;
-                        }
-                    "
-                >
-                    <img src="${resolveAsset(src)}" alt="Thumbnail" class="modal-thumbnail" />
-                </div>`;
-            })
-            .join('');
+                            if (childImg && mainImg.src !== childImg.src) {
+                                const currentActive = container.querySelector('.modal-thumbnail-wrapper.active');
+                                if (currentActive) currentActive.classList.remove('active');
+                                
+                                this.classList.add('active');
+                                mainImg.src = childImg.src;
+                            }
+                        "
+                    >
+                        <img src="${resolveAsset(src)}" alt="Thumbnail" class="modal-thumbnail" />
+                    </div>`;
+                })
+                .join('');
         }
     }
     
+    // SVGs limpios, definidos solo una vez
+    const expandIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-expand"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M20.25 20.25v-4.5m0 4.5h-4.5m4.5 0l-5.25-5.25" /></svg>`;
+    const shrinkIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-shrink"><path stroke-linecap="round" stroke-linejoin="round" d="M9 3.75v4.5m0 0H4.5m4.5 0L3.75 3.75M15 20.25v-4.5m0 0h4.5m-4.5 0l5.25 5.25" /></svg>`;
+
     const imageBlock = `
         <div class="modal-image-container">
-            <img src="${mainImageSrc}" alt="${alt || 'Modal Image'}" class="modal-image" />
+            <div class="modal-image-rel-wrapper">
+                <img src="${mainImageSrc}" alt="${alt || 'Modal Image'}" class="modal-image" />
+                <button class="modal-resize-btn" id="modalResizeButton">
+                    ${expandIconSVG}
+                    ${shrinkIconSVG}
+                </button>
+            </div>
             ${thumbnailsHTML ? `<div class="modal-thumbnails-gallery">${thumbnailsHTML}</div>` : ''}
         </div>
+        <script>
+            (function() {
+                const resizeButton = document.getElementById('modalResizeButton');
+                if (resizeButton) {
+                    resizeButton.addEventListener('click', function() {
+                        const container = this.closest('.modal-image-container');
+                        container.classList.toggle('is-expanded');
+                    });
+                }
+            })();
+        </script>
     `;
     return imageBlock;
 }
@@ -702,7 +723,7 @@ function renderPredators(section) {
             </div>
             <div class="grid">
                 ${database.predators.map((predator, index) => {
-                    const hasModal = predator.modal && (predator.sheet || predator.price);
+                    const hasModal = predator.modal && (predator.sheet || predator.price || predator.modalImage);
                     const hasExternalPage = predator.page === true && predator.content;
                     const isClickable = hasModal || hasExternalPage;
 
@@ -732,7 +753,7 @@ function renderPredators(section) {
 
         card.style.cursor = 'pointer';
         card.addEventListener('click', () => {
-            if (predator.modal && (predator.price || predator.sheet)) {
+            if (predator.modal && (predator.price || predator.sheet || predator.modalImage)) {
                 let priceTable = '';
                 if (predator.price) {
                     const rows = predator.price.trim().split('\n');
