@@ -482,18 +482,6 @@ a.nolink {
     border-bottom: 1px solid #23312e88;
     font-weight: normal;
 }
-.predator-graphic-info{
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-.predator-graphic-info>img{
-    width: 400px;
-    max-width:100%;
-    border-radius:.5rem;
-}
 .price-table {
     margin-left: auto;
     margin-right: auto;
@@ -738,7 +726,49 @@ h2.text-shadow {
     width: 50%;
     margin-right: 1rem;
 }
-
+.modal-image-container{
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.modal-image-container>img{
+    width: 400px;
+    max-width:100%;
+    border-radius:.5rem;
+}
+.modal-thumbnails-gallery {
+    display: flex;
+    flex-direction: row;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+.modal-thumbnail-wrapper {
+    display: flex;
+    aspect-ratio: 1 / 1;
+    max-width: 50px;
+    cursor: pointer;
+    border: 1px solid #cacaca;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    align-items: center;
+    justify-content: center;
+    background-color: #efefef;
+}
+.modal-thumbnail-wrapper.active{
+    border: 1px solid #8b8b8b;
+}
+.modal-thumbnail{
+    opacity: 0.5;
+    max-width: 100%;
+}
+.modal-thumbnail-wrapper:hover > .modal-thumbnail{
+    opacity: 0.9;
+}
+.modal-thumbnail-wrapper.active > .modal-thumbnail {
+    opacity: 1;
+}
 
 .hover-bg{
     position: relative;

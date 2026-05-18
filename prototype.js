@@ -137,7 +137,6 @@ function parseData(menu, sections, services, predators, methodology, projects, i
             .filter(x => isEnabled(x["Habilitado"]))
             .map(x => {
                 const hasModal = String(x["Modal"] ?? "").trim().toLowerCase() === "si";
-
                 return {
                     enabled: x["Habilitado"],
                     title: x["Título"],
@@ -182,6 +181,7 @@ function parseData(menu, sections, services, predators, methodology, projects, i
                     description: x["Descripción"],
                     image: x["Imagen"],
                     modal: hasModal,
+                    modalImage: hasModal ? (x["ImagenModal"] ?? "") : "",
                     price: hasModal ? (x["Precio"] ?? "") : "", 
                     sheet: hasModal ? (x["Ficha"] ?? "") : "",
                     page: hasPage,
@@ -205,9 +205,9 @@ function parseData(menu, sections, services, predators, methodology, projects, i
                     title: x["Título"],
                     description: x["Descripción"],
                     image: x["Imagen"],
-                    background: x["Fondo"],
                     link: x["Enlace"],
                     modal: hasModal ? (x["Ficha"] ?? "") : "",
+                    modalImage: hasModal ? (x["ImagenModal"] ?? "") : "",
                     sheet: x["Ficha"]
                 };
             }),

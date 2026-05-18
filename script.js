@@ -275,10 +275,7 @@ function renderWhere(section) {
             card.addEventListener('click', () => {
                 const modalContent = `
                     <div>
-                        ${(crop.modalImage || crop.image)
-                            ? `<img src="${resolveAsset(crop.modalImage || crop.image)}" class="modal-image" style="float:left;">`
-                            : ''
-                        }
+                        ${renderModalImageBlock(crop.image, crop.modalImage, crop.title)}
                         ${renderParagraphs(crop.sheet)}
                     </div>
                 `;
@@ -594,10 +591,7 @@ function renderServices(section) {
             card.addEventListener('click', () => {
                 const modalContent = `
                     <div>
-                        ${(service.modalImage || service.image) 
-                            ? `<img src="${resolveAsset(service.modalImage || service.image)}" class="modal-image" style="float:left;">` 
-                            : ''
-                        }
+                        ${renderModalImageBlock(service.image, service.modalImage, service.title)}
                         ${renderParagraphs(service.sheet)}
                     </div>
                 `;
@@ -645,6 +639,55 @@ function renderServices(section) {
 
     if (section.font) servicesSection.style.color = section.font;
     if (!document.getElementById('services')) document.body.append(servicesSection);
+}
+
+function renderModalImageBlock(defaultImage, modalImages, alt) {
+    let mainImageSrc = defaultImage;
+    let thumbnailsHTML = '';
+    
+    if (modalImages && modalImages.trim() !== '') {
+        const modalImagesArray = modalImages
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line !== '');
+            
+        if (modalImagesArray.length > 0) {
+            mainImageSrc = resolveAsset(modalImagesArray[0]);
+        }
+        if (modalImagesArray.length > 1) {
+        thumbnailsHTML = modalImagesArray
+            .map((src, index) => {
+                const isActive = index === 0 ? 'active' : '';
+                return `
+                <div class="modal-thumbnail-wrapper ${isActive}" 
+                    onclick="
+                        const container = this.closest('.modal-image-container');
+                        const mainImg = container.querySelector('.modal-image');
+                        const childImg = this.querySelector('.modal-thumbnail');
+                        
+                        if (childImg && mainImg.src !== childImg.src) {
+                            const currentActive = container.querySelector('.modal-thumbnail-wrapper.active');
+                            if (currentActive) currentActive.classList.remove('active');
+                            
+                            this.classList.add('active');
+                            mainImg.src = childImg.src;
+                        }
+                    "
+                >
+                    <img src="${resolveAsset(src)}" alt="Thumbnail" class="modal-thumbnail" />
+                </div>`;
+            })
+            .join('');
+        }
+    }
+    
+    const imageBlock = `
+        <div class="modal-image-container">
+            <img src="${mainImageSrc}" alt="${alt || 'Modal Image'}" class="modal-image" />
+            ${thumbnailsHTML ? `<div class="modal-thumbnails-gallery">${thumbnailsHTML}</div>` : ''}
+        </div>
+    `;
+    return imageBlock;
 }
 
 function renderPredators(section) {
@@ -710,9 +753,7 @@ function renderPredators(section) {
                 }
                 const modalContent = `
                     <div>
-                        <div class="predator-graphic-info">
-                            <img src="${resolveAsset(predator.image)}" class="modal-image">
-                        </div>
+                        ${renderModalImageBlock(predator.image, predator.modalImage, predator.name)}
                         ${predator.sheet ? '<br/><hr/>' + renderParagraphs(predator.sheet) : ''}
                         ${priceTable}
                     </div>
@@ -827,20 +868,15 @@ function renderIdi(section) {
                 ${database.idi.map((idi, index) => {
                     const hasLink = idi.link && idi.link.trim() !== "";
                     const hasModal = idi.modal && idi.sheet && idi.sheet.trim() !== "";
-
-                    const styles = ((hasLink || hasModal) && idi.background) ? `style="--hover-bg: url('${resolveAsset(idi.background.replace(/\\/g, '/'))}');"` : '';
                     const classes = `class="card${(hasLink || hasModal) ? ' hover-shadow':''}"`;
                     const cardInner = `
-                        <div ${classes} ${styles}>
+                        <div ${classes}>
                             <h3>${idi.title}</h3>
                             ${idi.image ? `<img src="${resolveAsset(idi.image)}" class="idi-item-image">` : ''}
                             <p>${idi.description || ''}</p>
                             ${(hasLink && !hasModal) ? '<p>(<span>Ir al artículo</span>)</p>' : ''}
                         </div>
                     `;
-                    //${(hasLink && !hasModal) ? '<p>(<span>Ir al enlace</span>)</p>' : (hasLink ? `<p>(<a href="${idi.link}" target="_blank" rel="noopener noreferrer">Ir al enlace</a>)</p>` : '')}
-
-
                     return `
                         <div class="idi-card hover-bg" data-index="${index}">
                             ${(hasLink && !hasModal) ? `<a href="${idi.link}" target="_blank" rel="noopener noreferrer" class="nolink">${cardInner}</a>` : cardInner}
@@ -892,7 +928,7 @@ function renderIdi(section) {
 
                 const modalContent = `
                     <div>
-                        ${idi.image ? `<img src="${resolveAsset(idi.image)}" class="modal-image" style="float: left;">` : ''}
+                        ${renderModalImageBlock(idi.image, idi.modalImage, idi.title)}
                         ${renderParagraphs(idi.sheet)}
                         ${idi.link ? `<p>(<a href="${idi.link}" target="_blank" rel="noopener noreferrer">Ir al artículo</a>)</p>` : ''}
                     </div>
