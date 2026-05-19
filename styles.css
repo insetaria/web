@@ -983,6 +983,9 @@ h2.text-shadow {
         margin-right: 0px;
         margin-bottom: 1rem;
     }
+    .modal-resize-btn{
+        display: none;
+    }
 }
 @media (max-width: 290px) {
     #menu {
