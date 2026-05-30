@@ -1413,6 +1413,8 @@ function renderSectionDetailPage(slug) {
 
 async function load() {
     try{
+        // 404 redirect recovery (GitHub Pages SPA support)
+        let pendingDetail = null;
         const savedUrl = sessionStorage.getItem("insectaria_404");
         if (savedUrl) {
             sessionStorage.removeItem("insectaria_404");
@@ -1425,17 +1427,15 @@ async function load() {
                     const known = ["predators", "services", "projects", "idi", "sections"];
                     const hasGid = url.search && url.search.includes("gid=");
                     if (known.includes(collection) && hasGid) {
-                        window.history.replaceState(
-                            { type: "detail", collection, slug },
-                            "",
-                            url.pathname + url.search
-                        );
+                        pendingDetail = { collection, slug, href: url.pathname + url.search };
                     }
                 }
             } catch (_) {}
         }
 
-        const params = new URLSearchParams(window.location.search);
+        const params = new URLSearchParams(
+            pendingDetail ? pendingDetail.href : window.location.search
+        );
         const gid = params.get("gid");
         const script = document.createElement("script");
         if (gid) {
@@ -1459,6 +1459,20 @@ async function load() {
         await waitForAppDataAndDOM();
         window.database = cleanAppData();
         //debug(window.database);
+
+        if (pendingDetail) {
+            window.history.replaceState(
+                { type: "detail", collection: pendingDetail.collection, slug: pendingDetail.slug },
+                "",
+                pendingDetail.href
+            );
+            if (pendingDetail.collection === "sections") {
+                renderSectionDetailPage(pendingDetail.slug);
+            } else {
+                renderDetailPage(pendingDetail.collection, pendingDetail.slug);
+            }
+            return;
+        }
 
         const page = detectPage();
         if (page.type === "detail") {
