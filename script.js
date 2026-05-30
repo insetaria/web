@@ -321,10 +321,7 @@ function initCropsCarousel(scope) {
             node.addEventListener('click', () => {
                 const modalContent = `
                     <div>
-                        ${(crop.modalImage || crop.image)
-                            ? `<img src="${resolveAsset(crop.modalImage || crop.image)}" class="modal-image" style="float:left;">`
-                            : ''
-                        }
+                        ${renderModalImageBlock(crop.image, crop.modalImage, crop.title)}
                         ${renderParagraphs(crop.sheet)}
                     </div>
                 `;
