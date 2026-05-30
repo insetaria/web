@@ -305,6 +305,172 @@ a.nolink {
     .crops-content { --visible: 1; }
 }
 
+/* ============================================================
+   Section Summary (homepage card for page-type sections)
+   ============================================================ */
+.section-summary {
+    gap: 1rem;
+}
+.section-summary-link {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.75rem 2rem;
+    background: #2AD7A8;
+    color: #fff;
+    border-radius: 2rem;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background 0.3s ease;
+}
+.section-summary-link:hover {
+    background: #22b892;
+}
+
+/* ============================================================
+   Timeline (roadmap detail page)
+   ============================================================ */
+#section-detail {
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+}
+.timeline {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    margin: 2rem auto 0;
+    text-align: left;
+}
+.timeline::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(to bottom, transparent, #2AD7A8, #2AD7A8, transparent);
+    transform: translateX(-50%);
+}
+.timeline-item {
+    position: relative;
+    display: flex;
+    width: 100%;
+    margin-bottom: 3rem;
+}
+.timeline-item > * {
+    width: 50%;
+    box-sizing: border-box;
+}
+.timeline-item.left {
+    flex-direction: row;
+}
+.timeline-item.right {
+    flex-direction: row-reverse;
+}
+.timeline-dot {
+    position: absolute;
+    left: 50%;
+    top: 0.4rem;
+    width: 16px;
+    height: 16px;
+    background: #2AD7A8;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    transform: translateX(-50%);
+    z-index: 1;
+    box-shadow: 0 0 0 2px #2AD7A8;
+}
+.timeline-date {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #2AD7A8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-align: right;
+    padding-right: 2rem;
+    align-self: flex-start;
+    padding-top: 0.25rem;
+}
+.timeline-item.right .timeline-date {
+    text-align: left;
+    padding: 0.25rem 0 0 2rem;
+}
+.timeline-content {
+    background: #f7f7f7;
+    padding: 1rem 1.25rem;
+    border-radius: 0.5rem;
+}
+.timeline-item.left .timeline-content {
+    padding-left: 2rem;
+}
+.timeline-item.right .timeline-content {
+    padding-right: 2rem;
+}
+.timeline-content h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.2rem;
+}
+.timeline-content p {
+    margin: 0;
+    line-height: 1.6;
+}
+.timeline-image {
+    width: 100%;
+    max-width: 300px;
+    border-radius: 0.3rem;
+    margin-bottom: 0.75rem;
+}
+
+@media (max-width: 700px) {
+    #section-detail .timeline {
+        padding: 0;
+    }
+    .timeline::before {
+        left: 18px;
+        transform: none;
+    }
+    .timeline-item {
+        padding-left: 2.75rem;
+        flex-direction: column;
+        margin-bottom: 2rem;
+    }
+    .timeline-item > * {
+        width: 100%;
+    }
+    .timeline-item.left,
+    .timeline-item.right {
+        flex-direction: column;
+    }
+    #section-detail {
+        padding-top: 3rem;
+        padding-bottom: 3rem;
+    }
+    .timeline-dot {
+        left: 12px;
+        width: 14px;
+        height: 14px;
+        transform: none;
+    }
+    .timeline-date {
+        text-align: left;
+        padding: 0 0 0.25rem;
+        font-size: 0.8rem;
+    }
+    .timeline-item.right .timeline-date {
+        text-align: left;
+        padding: 0 0 0.25rem;
+    }
+    .timeline-item.left .timeline-content,
+    .timeline-item.right .timeline-content {
+        padding: 0.75rem 1rem;
+    }
+    .timeline-content h3 {
+        font-size: 1.1rem;
+    }
+    .timeline-image {
+        max-width: 100%;
+    }
+}
+
 
 .about-content h3 {
     font-size: 170%;
@@ -709,7 +875,7 @@ h2.text-shadow {
     letter-spacing: inherit;
     white-space: inherit;
     word-break: inherit;
-    color: rgb(231, 231, 231);
+    color: rgb(0 0 0 / 10%);
     opacity: 0.6;
     transform: translate(0px, -3.5rem) scale(1.7);
     pointer-events: none;

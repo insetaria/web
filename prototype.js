@@ -91,7 +91,7 @@ async function loadDataSheet() {
     const ds = await buildDataStructure();
     if(ds){
         try {
-            const [a, b, c, d, e, f, g, h, i] = await Promise.all([
+            const [a, b, c, d, e, f, g, h, i, j] = await Promise.all([
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.menu.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.sections.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.services.gid),
@@ -101,8 +101,9 @@ async function loadDataSheet() {
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.idi.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.footer.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.crops.gid),
+                fetchGoogleSheetsCSVAsJson(ds.gid, ds.roadmap.gid),
             ]);
-            parseData(a, b, c, d, e, f, g, h, i);
+            parseData(a, b, c, d, e, f, g, h, i, j);
             createFloatingSaveButton(window.appData);
         } catch (e) {
             console.error("Error cargando base de datos:", e);
@@ -111,7 +112,7 @@ async function loadDataSheet() {
     document.dispatchEvent(new Event("appDataReady"));
 }
 
-function parseData(menu, sections, services, predators, methodology, projects, idi, footer, crops) {
+function parseData(menu, sections, services, predators, methodology, projects, idi, footer, crops, roadmap) {
     window.appData = {
         menu: menu
             .filter(x => isEnabled(x["Habilitado"]))
@@ -131,7 +132,8 @@ function parseData(menu, sections, services, predators, methodology, projects, i
                 background: x["Fondo"],
                 font: x["Fuente"],
                 link: x["Enlace"],
-                id: x["Clave"]
+                id: x["Clave"],
+                page: String(x["Pagina"] ?? "").trim().toLowerCase() === "si"
             })),
         crops: crops
             .filter(x => isEnabled(x["Habilitado"]))
@@ -211,6 +213,15 @@ function parseData(menu, sections, services, predators, methodology, projects, i
                     sheet: x["Ficha"]
                 };
             }),
+        roadmap: roadmap
+            .filter(x => isEnabled(x["Habilitado"]))
+            .map(x => ({
+                enabled: x["Habilitado"],
+                date: x["Fecha"],
+                title: x["Título"],
+                text: x["Texto"] || x["Descripción"] || x["Descripcion"] || "",
+                image: x["Imagen"]
+            })),
         footer: footer
             .filter(x => isEnabled(x["Habilitado"]))
             .map(x => ({
@@ -403,6 +414,17 @@ async function handleCompleteExport() {
             }
         }
 
+        // Generar páginas de secciones con page: true (ej. roadmap)
+        const sections = window.appData.sections || [];
+        for (const section of sections) {
+            if (!section.page) continue;
+            const slug = (section.id || "").replace(/^#/, "").trim();
+            if (!slug) continue;
+            const html = generateSectionStaticHTML(section);
+            zip.file(`sections/${slug}.html`, html);
+            console.log(`[ZIP] añadido: sections/${slug}.html`);
+        }
+
         console.log("[ZIP] generando archivo...");
 
         const timestamp = getFormattedTimestamp();
@@ -511,6 +533,41 @@ function generateStaticHTML(type, item) {
 </html>`;
 }
 
+/**
+ * Genera el HTML para una página de sección autogenerada.
+ * Similar a generateStaticHTML pero usando los metadatos de la sección
+ * para el title/description, y con doble '../' porque vive en /sections/.
+ */
+function generateSectionStaticHTML(section) {
+    const title = section.title || "";
+    const description = (section.text || "").replace(/"/g, "&quot;");
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="../assets/img/logos/icon.png" rel="icon">
+    <meta name="theme-color" content="#4CAF50">
+
+    <title>${title} · Insectaria</title>
+    <meta name="author" content="insectaria.com">
+    <meta name="description" content="${description}">
+    <meta name="robots" content="index, follow">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="${title}">
+    <meta property="og:description" content="${description}">
+    <meta property="og:image" content="../assets/img/logos/icon.png">
+
+    <script src="../script.js"></script>
+    <link rel="stylesheet" href="../assets/vendor/icofont/icofont.min.css">
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+</body>
+</html>`;
+}
+
 loadDataSheet();
 
 const prototypeModal = () => modal(
@@ -552,6 +609,25 @@ renderDetailPage = function(collection, slug){
     }
 }
 
+const renderSection = renderSectionDetailPage;
+renderSectionDetailPage = function(slug){
+    renderSection(slug);
+    prototypeModal();
+    const backLink = document.querySelector("#section-detail .back-link");
+    if (backLink) {
+        backLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                const target = `${getBasePath()}${getGidSuffix()}`;
+                window.history.pushState({ type: "index" }, "", target);
+                navigateSPA({ type: "index" });
+            }
+        });
+    }
+}
+
 // ============================================================
 //  Navegación SPA (solo en modo prototipo)
 //  Las páginas de detalle (/predators/xxx.html, /services/...,
@@ -566,7 +642,8 @@ const KNOWN_DETAIL_COLLECTIONS = [
     "services",
     "projects",
     "idi",
-    "crops"
+    "crops",
+    "sections"
 ];
 
 /**
@@ -608,9 +685,18 @@ function navigateSPA(page) {
     clearRenderedBody();
     window.scrollTo(0, 0);
     if (page.type === "detail") {
-        renderDetailPage(page.collection, page.slug);
+        if (page.collection === "sections") {
+            renderSectionDetailPage(page.slug);
+        } else {
+            renderDetailPage(page.collection, page.slug);
+        }
     } else {
         renderSections();
+        requestAnimationFrame(() => {
+            if (window.location.hash) {
+                smoothScroll(window.location.hash, 1000);
+            }
+        });
     }
 }
 
@@ -634,4 +720,21 @@ window.open = function (url, target, features) {
 // 2) Botón atrás/adelante del navegador
 window.addEventListener("popstate", () => {
     navigateSPA(detectPage());
+});
+
+// 3) Interceptar clicks en <a> que apunten a páginas de detalle
+//    (ej: "Ver historia completa" en roadmap, etc.)
+document.addEventListener("click", (e) => {
+    const link = e.target.closest("a[href]");
+    if (!link) return;
+    const detail = parseDetailUrl(link.getAttribute("href"));
+    if (detail) {
+        e.preventDefault();
+        window.history.pushState(
+            { type: "detail", collection: detail.collection, slug: detail.slug },
+            "",
+            detail.href
+        );
+        navigateSPA({ type: "detail", collection: detail.collection, slug: detail.slug });
+    }
 });

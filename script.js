@@ -743,6 +743,10 @@ function renderPredators(section) {
 
         card.style.cursor = 'pointer';
         card.addEventListener('click', () => {
+            const slug = predator.id || slugify(predator.name);
+            const hasPage = predator.page === true && predator.content;
+            const detailUrl = hasPage ? buildDetailUrl("predators", slug) : null;
+
             if (predator.modal && (predator.price || predator.sheet || predator.modalImage)) {
                 let priceTable = '';
                 if (predator.price) {
@@ -760,25 +764,22 @@ function renderPredators(section) {
                         </table>
                         <br/>
                     `;
-                        
                 }
+                const pageLink = detailUrl
+                    ? `<p style="margin-top:1rem"><a href="#" onclick="window.open('${detailUrl}','_blank');return false" class="nolink"><strong>Más información →</strong></a></p>`
+                    : "";
                 const modalContent = `
                     <div>
                         ${renderModalImageBlock(predator.image, predator.modalImage, predator.name)}
                         ${predator.sheet ? '<br/><hr/>' + renderParagraphs(predator.sheet) : ''}
+                        ${pageLink}
                         ${priceTable}
                     </div>
                 `;
                 modal(`<i>${predator.name}</i> - ${predator.state}`, modalContent);
 
-            } 
-            else if (predator.page === true && predator.content) {
-                // Usamos el id pre-calculado (prototype.js lo genera al
-                // parsear y queda persistido en database.js al exportar).
-                // Fallback al slug del nombre para datos antiguos.
-                const slug = predator.id || slugify(predator.name);
-                const url = buildDetailUrl("predators", slug);
-                window.open(url, '_blank');
+            } else if (detailUrl) {
+                window.open(detailUrl, '_blank');
             }
         });
     });
@@ -1084,6 +1085,22 @@ function applyTextShadow(el) {
     el.appendChild(clone);
 }
 
+function renderSectionSummary(section) {
+    const sec = document.getElementById(section.id.replace('#', '')) || document.createElement('section');
+    sec.id = section.id.replace('#', '');
+    const slug = (section.id || "").replace(/^#/, "").trim();
+    sec.innerHTML = `
+        <div class="container section-summary">
+            <h2 class="text-shadow">${section.title}</h2>
+            <p>${section.text}</p>
+            <a href="${buildDetailUrl("sections", slug)}" class="section-summary-link">Ver historia completa</a>
+        </div>
+    `;
+    if (section.background) sec.style.backgroundColor = section.background;
+    if (section.font) sec.style.color = section.font;
+    if (!document.getElementById(sec.id)) document.body.append(sec);
+}
+
 function renderSections() {
     
     renderMenu();
@@ -1108,6 +1125,9 @@ function renderSections() {
 
     const idi = database.sections.find(s => s.id === "#i+d+i");
     if (idi) renderIdi(idi);
+
+    const roadmap = database.sections.find(s => s.id === "#roadmap");
+    if (roadmap && roadmap.page && database.roadmap) renderSectionSummary(roadmap);
 
     const contactData = database.sections.find(s => s.id === "#contact");
     if (contactData) renderContact(contactData);
@@ -1257,7 +1277,7 @@ function detectPage() {
         const collection = match[1].toLowerCase();
         const slug = match[2].toLowerCase();
         // Sólo consideramos detalle las colecciones conocidas
-        const known = ["predators", "services", "projects", "idi"];
+        const known = ["predators", "services", "projects", "idi", "sections"];
         if (known.includes(collection)) {
             return { type: "detail", collection, slug };
         }
@@ -1340,6 +1360,56 @@ function renderDetailPage(collection, slug) {
     });
 }
 
+function renderSectionDetailPage(slug) {
+    renderMenu();
+    const section = database.sections?.find(s => s.id === `#${slug}`);
+    const items = database[slug];
+    const main = document.createElement("section");
+    main.id = "section-detail";
+    main.role = "main";
+    if (!section || !Array.isArray(items)) {
+        main.innerHTML = `
+            <div class="container">
+                <h2>Contenido no encontrado</h2>
+                <p>No se ha encontrado la sección <code>${slug}</code>.</p>
+                <p><a href="${getBasePath()}${getGidSuffix()}" class="nolink">← Volver al inicio</a></p>
+            </div>
+        `;
+        document.body.appendChild(main);
+        return;
+    }
+    document.title = `${section.title} · Insectaria`;
+    main.style.background = section.background || "";
+    main.style.color = section.font || "";
+    main.innerHTML = `
+        <div class="container">
+            <a href="${getBasePath()}${getGidSuffix()}" class="nolink back-link">← Volver</a>
+            <h1 class="text-shadow">${section.title}</h1>
+            ${section.subtitle && section.subtitle !== "--" ? `<h2>${section.subtitle}</h2>` : ""}
+            <div class="timeline">
+                ${items.map((item, i) => `
+                    <div class="timeline-item ${i % 2 === 0 ? 'left' : 'right'}">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-date">${item.date}</div>
+                        <div class="timeline-content">
+                            ${item.image ? `<img src="${resolveAsset(item.image)}" alt="${item.title}" class="timeline-image">` : ""}
+                            <h3>${item.title}</h3>
+                            <p>${item.text}</p>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    document.body.appendChild(main);
+    const footerData = database.sections?.find(s => s.id === "#footer");
+    if (footerData && database.footer) renderFooter(footerData);
+    renderModal();
+    document.querySelectorAll(".text-shadow").forEach(item => {
+        applyTextShadow(item);
+    });
+}
+
 // ============================================================
 //  Carga principal
 // ============================================================
@@ -1373,9 +1443,18 @@ async function load() {
 
         const page = detectPage();
         if (page.type === "detail") {
-            renderDetailPage(page.collection, page.slug);
+            if (page.collection === "sections") {
+                renderSectionDetailPage(page.slug);
+            } else {
+                renderDetailPage(page.collection, page.slug);
+            }
         } else {
             renderSections();
+            requestAnimationFrame(() => {
+                if (window.location.hash) {
+                    smoothScroll(window.location.hash, 1000);
+                }
+            });
         }
     }catch(err){
         console.error(err);
