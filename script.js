@@ -1433,10 +1433,12 @@ async function load() {
             } catch (_) {}
         }
 
-        const params = new URLSearchParams(
-            pendingDetail ? pendingDetail.href : window.location.search
-        );
-        const gid = params.get("gid");
+        const rawQuery = pendingDetail
+            ? pendingDetail.href.includes("?")
+                ? pendingDetail.href.slice(pendingDetail.href.indexOf("?"))
+                : ""
+            : window.location.search;
+        const gid = new URLSearchParams(rawQuery).get("gid");
         const script = document.createElement("script");
         if (gid) {
             window.APP_GID = gid;
