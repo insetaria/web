@@ -1413,6 +1413,28 @@ function renderSectionDetailPage(slug) {
 
 async function load() {
     try{
+        const savedUrl = sessionStorage.getItem("insectaria_404");
+        if (savedUrl) {
+            sessionStorage.removeItem("insectaria_404");
+            try {
+                const url = new URL(savedUrl);
+                const match = url.pathname.match(/\/([^/]+)\/([^/]+)\.html?$/i);
+                if (match) {
+                    const collection = match[1].toLowerCase();
+                    const slug = match[2].toLowerCase();
+                    const known = ["predators", "services", "projects", "idi", "sections"];
+                    const hasGid = url.search && url.search.includes("gid=");
+                    if (known.includes(collection) && hasGid) {
+                        window.history.replaceState(
+                            { type: "detail", collection, slug },
+                            "",
+                            url.pathname + url.search
+                        );
+                    }
+                }
+            } catch (_) {}
+        }
+
         const params = new URLSearchParams(window.location.search);
         const gid = params.get("gid");
         const script = document.createElement("script");
