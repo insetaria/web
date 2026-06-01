@@ -339,6 +339,7 @@ a.nolink {
     max-width: 900px;
     margin: 2rem auto 0;
     text-align: left;
+    box-sizing: border-box;
 }
 .timeline::before {
     content: "";
@@ -355,6 +356,7 @@ a.nolink {
     display: flex;
     width: 100%;
     margin-bottom: 3rem;
+    box-sizing: border-box;
 }
 .timeline-item > * {
     width: 50%;
@@ -418,6 +420,18 @@ a.nolink {
     max-width: 300px;
     border-radius: 0.3rem;
     margin-bottom: 0.75rem;
+}
+.detail-page .back-link {
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+    color: #4CAF50;
+    text-decoration: none;
+    transition: opacity 0.15s;
+}
+#roadmap h3{
+    font-size: 150%;
+    margin-top: 0;
 }
 
 @media (max-width: 700px) {
@@ -711,6 +725,11 @@ a.nolink {
     text-decoration: underline;
     cursor: pointer;
     color: #2AD7A8;
+}
+.text-shadow {
+    position: relative;
+    display: inline-block;
+    z-index: 3;
 }
 #contact{
     padding-top: 5rem;

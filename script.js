@@ -753,7 +753,6 @@ function renderPredators(section) {
                         return `<tr>${cells}</tr>`;
                     }).join('');
                     priceTable = `
-                        <br/><hr/>
                         <table class="price-table">
                             <tbody class="price-table-body">
                                 ${tableRows}
@@ -763,14 +762,14 @@ function renderPredators(section) {
                     `;
                 }
                 const pageLink = detailUrl
-                    ? `<p style="margin-top:1rem"><a href="#" onclick="window.open('${detailUrl}','_blank');return false" class="nolink"><strong>Más información →</strong></a></p>`
+                    ? `<p style="margin-top:1rem; text-align: right;"><a href="#" onclick="window.open('${detailUrl}','_blank');return false" class="nolink"><strong style="padding-right: 2rem;">Más información 🠊</strong></a></p>`
                     : "";
                 const modalContent = `
                     <div>
                         ${renderModalImageBlock(predator.image, predator.modalImage, predator.name)}
-                        ${predator.sheet ? '<br/><hr/>' + renderParagraphs(predator.sheet) : ''}
-                        ${pageLink}
+                        ${predator.sheet ? '<br/><hr/>' + renderParagraphs(predator.sheet) + '<br/><hr/>': ''}
                         ${priceTable}
+                        ${pageLink}
                     </div>
                 `;
                 modal(`<i>${predator.name}</i> - ${predator.state}`, modalContent);
@@ -1088,8 +1087,9 @@ function renderSectionSummary(section) {
     const slug = (section.id || "").replace(/^#/, "").trim();
     sec.innerHTML = `
         <div class="container section-summary">
-            <h2 class="text-shadow">${section.title}</h2>
-            <p>${section.text}</p>
+            ${section.title ? `<h2 class="text-shadow">${section.title}</h2>` : ""}
+            ${section.subtitle ? `<h3>${section.subtitle}</h3>` : ""}
+            ${section.text ? `<p>${section.text}</p>` : ""}
             <a href="${buildDetailUrl("sections", slug)}" class="section-summary-link">Ver historia completa</a>
         </div>
     `;
@@ -1328,7 +1328,7 @@ function renderDetailPage(collection, slug) {
             <div class="container">
                 <h2>Contenido no encontrado</h2>
                 <p>No se ha encontrado información para <code>${collection}/${slug}</code>.</p>
-                <p><a href="${getBasePath()}${getGidSuffix()}" class="nolink">← Volver al inicio</a></p>
+                <p><a href="${getBasePath()}${getGidSuffix()}" class="nolink">🠈 Volver al inicio</a></p>
             </div>
         `;
         document.body.appendChild(main);
@@ -1341,7 +1341,7 @@ function renderDetailPage(collection, slug) {
     document.title = `${title} · Insectaria`;
     main.innerHTML = `
         <div class="container">
-            <a href="${getBasePath()}${getGidSuffix()}" class="nolink back-link">← Volver</a>
+            <a href="${getBasePath()}${getGidSuffix()}" class="nolink back-link">🠈 Volver</a>
             ${image ? `<div class="detail-image"><img src="${image}" alt="${title}"></div>` : ""}
             <h1 class="text-shadow"><i>${title}</i></h1>
             ${subtitle ? `<h2>${subtitle}</h2>` : ""}
@@ -1369,7 +1369,7 @@ function renderSectionDetailPage(slug) {
             <div class="container">
                 <h2>Contenido no encontrado</h2>
                 <p>No se ha encontrado la sección <code>${slug}</code>.</p>
-                <p><a href="${getBasePath()}${getGidSuffix()}" class="nolink">← Volver al inicio</a></p>
+                <p><a href="${getBasePath()}${getGidSuffix()}" class="nolink">🠈 Volver al inicio</a></p>
             </div>
         `;
         document.body.appendChild(main);
@@ -1378,11 +1378,13 @@ function renderSectionDetailPage(slug) {
     document.title = `${section.title} · Insectaria`;
     main.style.background = section.background || "";
     main.style.color = section.font || "";
+    main.classList.add("detail-page");
     main.innerHTML = `
         <div class="container">
-            <a href="${getBasePath()}${getGidSuffix()}" class="nolink back-link">← Volver</a>
+            <a href="${getBasePath()}${getGidSuffix()}" class="back-link">🠈 Volver</a>
             <h1 class="text-shadow">${section.title}</h1>
-            ${section.subtitle && section.subtitle !== "--" ? `<h2>${section.subtitle}</h2>` : ""}
+            ${section.subtitle ? `<h2>${section.subtitle}</h2>` : ""}
+            ${section.text ? `<p>${section.text}</p>` : ""}
             <div class="timeline">
                 ${items.map((item, i) => `
                     <div class="timeline-item ${i % 2 === 0 ? 'left' : 'right'}">
