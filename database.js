@@ -49,25 +49,39 @@ window.appData = {
   "sections": [
     {
       "enabled": "15/01/2026",
-      "internal": "Título principal",
+      "internal": "Portada",
       "title": "INSECTARIA",
       "subtitle": "ENTOMOLOGÍA APLICADA",
-      "text": "CONTROL BIOLÓGICO ESPECIALIZADO\nEN CULTIVOS DE EXTERIOR",
+      "text": "<i>CONTROL BIOLÓGICO ESPECIALIZADO\nEN CULTIVOS DE EXTERIOR</i>",
       "background": "assets/img/sections/hero.jpg",
       "font": "#FFFFFF",
-      "link": "#about",
-      "id": "#hero"
+      "link": "#where",
+      "id": "#hero",
+      "page": false
+    },
+    {
+      "enabled": "15/01/2026",
+      "internal": "Cultivos y plagas",
+      "title": "CULTIVOS CLAVE",
+      "subtitle": "SOLUCIONES INNOVADORAS PARA LOS NUEVOS DESAFÍOS AGRÍCOLAS",
+      "text": "Aportamos un enfoque diferente para abordar las plagas de mayor impacto bajo el nuevo marco regulatorio",
+      "background": "#F0F0F0",
+      "font": "#3b434a",
+      "link": "--",
+      "id": "#where",
+      "page": false
     },
     {
       "enabled": "15/01/2026",
       "internal": "Información de la empresa",
       "title": "¿CÓMO LO HACEMOS?",
       "subtitle": "--",
-      "text": "Aplicamos criterios científicos y experiencia de campo para diseñar estrategias de control biológico adaptadas a cada cultivo y situación particular.",
+      "text": "Aplicamos criterios científicos y experiencia de campo para diseñar estrategias de control adaptadas a cada cultivo y situación particular.",
       "background": "#FFFFFF",
       "font": "#3b434a",
       "link": "--",
-      "id": "#about"
+      "id": "#about",
+      "page": false
     },
     {
       "enabled": "15/01/2026",
@@ -78,7 +92,8 @@ window.appData = {
       "background": "assets/img/sections/services.jpg",
       "font": "#3b434a",
       "link": "#portfolio",
-      "id": "#services"
+      "id": "#services",
+      "page": false
     },
     {
       "enabled": "15/01/2026",
@@ -89,7 +104,8 @@ window.appData = {
       "background": "#FFFFFF",
       "font": "#3b434a",
       "link": "--",
-      "id": "#portfolio"
+      "id": "#portfolio",
+      "page": false
     },
     {
       "enabled": "15/01/2026",
@@ -100,7 +116,8 @@ window.appData = {
       "background": "assets/img/crops/perales.jpg",
       "font": "#3b434a",
       "link": "--",
-      "id": "#projects"
+      "id": "#projects",
+      "page": false
     },
     {
       "enabled": "15/01/2026",
@@ -111,7 +128,8 @@ window.appData = {
       "background": "#FFFFFF",
       "font": "#3b434a",
       "link": "--",
-      "id": "#i+d+i"
+      "id": "#i+d+i",
+      "page": false
     },
     {
       "enabled": "15/01/2026",
@@ -121,19 +139,83 @@ window.appData = {
       "text": "📌 C. Calahorra, 2, Nave 7, 26006 Varea - Logroño, La Rioja",
       "background": "assets/img/sections/contact.jpg",
       "font": "#444444",
-      "link": "mailto:info@insectaria.com",
-      "id": "#contact"
+      "link": "https://www.google.com/maps/place/C.+Calahorra,+2,+Nave+7,+26006+Logro%C3%B1o,+La+Rioja",
+      "id": "#contact",
+      "page": false
     },
     {
       "enabled": "15/01/2026",
       "internal": "Footer",
       "title": "",
       "subtitle": "© Copyright insectaria.com 2026. All Rights Reserved.",
-      "text": "",
+      "text": "Con la colaboración de:",
       "background": "#FFFFFF",
       "font": "#3b434a",
       "link": "--",
-      "id": "#footer"
+      "id": "#footer",
+      "page": false
+    }
+  ],
+  "crops": [
+    {
+      "enabled": "12/05/2026",
+      "title": "Melocotón / Nectarino",
+      "text": "- Pulgones\n- Trips\n- Ácaros\n- Anarsia y Grafolita",
+      "image": "assets\\img\\crops\\melocotonero.png",
+      "modal": false,
+      "modalImage": "",
+      "sheet": "",
+      "id": "melocoton-nectarino"
+    },
+    {
+      "enabled": "13/05/2026",
+      "title": "Vid",
+      "text": "- Polilla del racimo\n- Cochinilla\n- Mosquito verde",
+      "image": "assets\\img\\crops\\vid.png",
+      "modal": false,
+      "modalImage": "",
+      "sheet": "",
+      "id": "vid"
+    },
+    {
+      "enabled": "12/05/2026",
+      "title": "Peral",
+      "text": "- Psila\n- Carpocapsa\n- Pulgones",
+      "image": "assets\\img\\crops\\peral.png",
+      "modal": false,
+      "modalImage": "",
+      "sheet": "",
+      "id": "peral"
+    },
+    {
+      "enabled": "13/05/2026",
+      "title": "Manzano",
+      "text": "- Pulgones\n- Ácaros\n- Carpocapsa",
+      "image": "assets\\img\\crops\\manzano.png",
+      "modal": false,
+      "modalImage": "",
+      "sheet": "",
+      "id": "manzano"
+    },
+    {
+      "enabled": "14/05/2026",
+      "title": "Olivo",
+      "text": "- Mosca del olivo\n- Prays\n- Algodoncillo",
+      "image": "assets\\img\\crops\\olivo.png",
+      "modal": false,
+      "modalImage": "",
+      "sheet": "",
+      "id": "olivo"
+    },
+    {
+      "enabled": "15/05/2026",
+      "title": "Espacios verdes urbanos",
+      "text": "- Pulgones\n- Ácaros\n- Cochinilla algodonosa",
+      "image": "assets\\img\\crops\\ornamentales.png",
+      "modal": false,
+      "modalImage": "",
+      "sheet": "",
+      "id": "espacios-verdes-urbanos"
     }
   ],
   "methodology": [
@@ -223,6 +305,7 @@ window.appData = {
       "description": "Depredador de psílidos",
       "image": "assets/img/portfolio/Anthocoris-nemoralis.jpg",
       "modal": true,
+      "modalImage": "assets/img/portfolio/Anthocoris-nemoralis.jpg",
       "price": "PVPR | Individuos\n35€ | 500",
       "sheet": "",
       "page": false,
@@ -235,7 +318,8 @@ window.appData = {
       "state": "Ninfa",
       "description": "Depredador de psílidos",
       "image": "assets/img/portfolio/Anthocoris-nemoralis-ninfa.jpg",
-      "modal": false,
+      "modal": true,
+      "modalImage": "assets/img/portfolio/Anthocoris-nemoralis-ninfa.jpg",
       "price": "",
       "sheet": "",
       "page": false,
@@ -248,7 +332,8 @@ window.appData = {
       "state": "Adulto",
       "description": "Depredador de trips",
       "image": "assets/img/portfolio/Orius-laevigatus.jpg",
-      "modal": false,
+      "modal": true,
+      "modalImage": "assets/img/portfolio/Orius-laevigatus.jpg",
       "price": "",
       "sheet": "",
       "page": false,
@@ -261,7 +346,8 @@ window.appData = {
       "state": "Ninfa",
       "description": "Depredador de trips",
       "image": "assets/img/portfolio/Orius-laevigatus-ninfa.jpg",
-      "modal": false,
+      "modal": true,
+      "modalImage": "assets/img/portfolio/Orius-laevigatus-ninfa.jpg",
       "price": "",
       "sheet": "",
       "page": false,
@@ -274,7 +360,8 @@ window.appData = {
       "state": "Adulto",
       "description": "Depredador de pulgones",
       "image": "assets/img/portfolio/Adalia-bipunctata-adulto-retocada.jpg",
-      "modal": false,
+      "modal": true,
+      "modalImage": "assets/img/portfolio/Adalia-bipunctata-adulto-retocada-2.jpg\nassets/img/portfolio/Adalia-bipunctata-2.jpg",
       "price": "",
       "sheet": "",
       "page": false,
@@ -287,7 +374,8 @@ window.appData = {
       "state": "Larva",
       "description": "Depredador de pulgones",
       "image": "assets/img/portfolio/Adalia-bipunctata-larva2.jpg",
-      "modal": false,
+      "modal": true,
+      "modalImage": "assets/img/portfolio/Adalia-bipunctata-larva2.jpg",
       "price": "",
       "sheet": "",
       "page": false,
@@ -299,8 +387,9 @@ window.appData = {
       "name": "Chrysoperla carnea",
       "state": "Larva",
       "description": "Depredador de pulgones",
-      "image": "assets/img/portfolio/Chrysoperla.jpg",
-      "modal": false,
+      "image": "assets/img/portfolio/Chrysoperla-retocada.jpg",
+      "modal": true,
+      "modalImage": "assets/img/portfolio/Chrysoperla-retocada.jpg\nassets/img/portfolio/Chrysoperla-carnea-retocada.jpg",
       "price": "",
       "sheet": "",
       "page": false,
@@ -312,8 +401,9 @@ window.appData = {
       "name": "Nesidiocoris tenuis",
       "state": "Adulto",
       "description": "Depredador de mosca blanca",
-      "image": "assets/img/portfolio/Nesidiocoris.jpg",
-      "modal": false,
+      "image": "assets/img/portfolio/Nesidiocoris-retocada.jpg",
+      "modal": true,
+      "modalImage": "assets/img/portfolio/Nesidiocoris-retocada.jpg",
       "price": "",
       "sheet": "",
       "page": false,
@@ -326,7 +416,8 @@ window.appData = {
       "state": "Ninfa",
       "description": "Depredador de mosca blanca",
       "image": "assets/img/portfolio/Nesidiocoris-ninfa.jpg",
-      "modal": false,
+      "modal": true,
+      "modalImage": "assets/img/portfolio/Nesidiocoris-ninfa.jpg",
       "price": "",
       "sheet": "",
       "page": false,
@@ -339,7 +430,8 @@ window.appData = {
       "state": "Adulto",
       "description": "Depredador de cochinillas",
       "image": "assets/img/portfolio/Cryptolaemus-montrouzieri.jpg",
-      "modal": false,
+      "modal": true,
+      "modalImage": "assets/img/portfolio/Cryptolaemus-montrouzieri-retocada.jpg",
       "price": "",
       "sheet": "",
       "page": false,
@@ -351,8 +443,9 @@ window.appData = {
       "name": "Cryptolaemus montrouzieri",
       "state": "Larva",
       "description": "Depredador de cochinillas",
-      "image": "assets/img/portfolio/Cryptolaemus-montrouzieri-larva.jpg",
-      "modal": false,
+      "image": "assets/img/portfolio/Cryptolaemus-montrouzieri-larva-retocada.jpg",
+      "modal": true,
+      "modalImage": "assets/img/portfolio/Cryptolaemus-montrouzieri-larva-retocada.jpg",
       "price": "",
       "sheet": "",
       "page": false,
@@ -389,9 +482,9 @@ window.appData = {
       "title": "TRAPVID",
       "description": "Monitoreo automatizado de la pollilla del racimo de la vid",
       "image": "assets\\img\\i+d+i\\trapvid-rotated.png",
-      "background": "",
       "link": "https://www.larioja.com/lomejordelvinoderioja/crean-prototipo-controlar-mediante-ia-polilla-racimo-20260224124802-nt.html",
       "modal": "",
+      "modalImage": "",
       "sheet": "En el proyecto TRAPVID (Trampeo Remoto y Automatizado de la Polilla de la Vid), hemos desarrollado, en colaboración con SpectralGeo, un dispositivo automático que integra inteligencia artificial para el monitoreo remoto y la detección temprana de la polilla del racimo con una precisión del 90%.\nEl sistema automatiza el conteo y la predicción de la plaga mediante dispositivos móviles, permitiendo una toma de decisiones técnica basada en datos en tiempo real.\nSu objetivo es automatizar la vigilancia de esta plaga sobre el viñedo, eliminando la necesidad de muestreos manuales y aportando datos en tiempo real. Esto permite optimizar y garantizar la eficacia de los tratamientos, además de reducir el tiempo de reacción ante posibles incidencias, evitando impactos en el cultivo.Al basar la toma de decisiones en datos, se prescinde de los tratamientos preventivos innecesarios, reduciendo los costos asociados.",
       "id": "trapvid"
     },
@@ -400,9 +493,9 @@ window.appData = {
       "title": "BIOFRUTEC",
       "description": "Estrategias biológicas y digitales en frutales",
       "image": "assets\\img\\i+d+i\\biofrutec.jpg",
-      "background": "",
       "link": "https://www.larioja.com/agro/rioja-pionera-lucha-plagas-frutales-insectos-depredadores-20260311072054-nt.html",
       "modal": "",
+      "modalImage": "",
       "sheet": "",
       "id": "biofrutec"
     },
@@ -411,28 +504,61 @@ window.appData = {
       "title": "PERALERT",
       "description": "Modelos de predicción en peral, manzano y nogal",
       "image": "assets\\img\\i+d+i\\peralert.jpg",
-      "background": "",
       "link": "",
       "modal": "",
+      "modalImage": "",
       "sheet": "",
       "id": "peralert"
+    }
+  ],
+  "roadmap": [
+    {
+      "enabled": "15/01/2026",
+      "date": "MM/YYYY",
+      "title": "Título del suceso",
+      "text": "Descripción del suceso dando un poco más de detalles",
+      "image": "assets/img/portfolio/Orius-laevigatus.jpg"
+    },
+    {
+      "enabled": "15/01/2026",
+      "date": "MM/YYYY",
+      "title": "Título del suceso",
+      "text": "Descripción del suceso dando un poco más de detalles",
+      "image": "assets/img/portfolio/Orius-laevigatus.jpg"
+    },
+    {
+      "enabled": "15/01/2026",
+      "date": "MM/YYYY",
+      "title": "Título del suceso",
+      "text": "Descripción del suceso dando un poco más de detalles",
+      "image": "assets/img/portfolio/Orius-laevigatus.jpg"
+    },
+    {
+      "enabled": "15/01/2026",
+      "date": "MM/YYYY",
+      "title": "Título del suceso",
+      "text": "Descripción del suceso dando un poco más de detalles",
+      "image": "assets/img/portfolio/Orius-laevigatus.jpg"
     }
   ],
   "footer": [
     {
       "enabled": "15/01/2026",
+      "title": "",
       "image": "assets\\img\\collaborators\\ADER.png",
       "description": "",
       "link": "https://www.ader.es"
     },
     {
       "enabled": "15/01/2026",
+      "title": "",
       "image": "assets\\img\\collaborators\\GobiernoDeLaRioja.png",
       "description": "",
       "link": "https://web.larioja.org"
     },
     {
       "enabled": "15/01/2026",
+      "title": "",
       "image": "assets\\img\\collaborators\\IBERAVAL.png",
       "description": "",
       "link": "https://www.iberaval.es"
