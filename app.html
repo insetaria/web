@@ -154,7 +154,6 @@ body {
 <script>
 (function() {
     var _d = atob;
-    var GATE = _d("ZTVmMzBiZTY5NTAyYTFmNjVmMzdmN2M2YThlNjQ0YjJiNmJiYWQwNjg2NDM3MWVkZmRlMjk4MTc0ZDJhODE1Ng==");
     var HASH_ID = _d("MTNPSm9TSFo2d0d2cU1mSHV4eEV6NGVoZWJiaFFWTGxh");
     var HASH_FAILOVER = _d("UExBQ0VIT0xERVJfSEFTSF9GQUlMT1ZFUl9EUklWRV9GSUxFX0lE");
     var CLIENT_ID = _d("Njc1MzQzMTMzMzAtYzZ0ZWEyYXAwNWU3Nmk1Ymg3OTRoYW1hYjNwbWUxbjkuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20=");
@@ -231,22 +230,6 @@ body {
     }
 
     (async function() {
-        try {
-            if (!window.crypto || !window.crypto.subtle) {
-                location.replace("index.html");
-                return;
-            }
-            var params = new URLSearchParams(location.search);
-            var gid = params.get("gid");
-            if (!gid) { location.replace("index.html"); return; }
-            var buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(gid));
-            var hash = Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2, "0"); }).join("");
-            if (hash !== GATE) { location.replace("index.html"); return; }
-        } catch(e) {
-            location.replace("index.html");
-            return;
-        }
-
         APP.style.display = "block";
 
         var gsiReady = false;
@@ -280,8 +263,8 @@ body {
                         }
                         var at = resp.access_token;
                         window.__launcher = { accessToken: at, clientId: CLIENT_ID };
-                        localStorage.setItem("HASH_accessToken", at);
-                        localStorage.setItem("HASH_clientId", CLIENT_ID);
+                        localStorage.setItem("_accessToken", at);
+                        localStorage.setItem("_clientId", CLIENT_ID);
                         checkAccess(at);
                     }
                 });
