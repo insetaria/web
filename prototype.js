@@ -1,4 +1,4 @@
-const HASH = "e5f30be69502a1f65f37f7c6a8e644b2b6bbad06864371edfde298174d2a8156";
+const HASH = "a6dc4df7ba0a4753960e05e01b8b7ab4e08d180cb2e35d273d670d652bd7f67a";
 
 async function sha256(message) {
     const msgBuffer = new TextEncoder().encode(message);
@@ -91,7 +91,7 @@ async function loadDataSheet() {
     const ds = await buildDataStructure();
     if(ds){
         try {
-            const [a, b, c, d, e, f, g, h, i, j] = await Promise.all([
+            const [a, b, c, d, e, f, g, h, i, j, k] = await Promise.all([
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.menu.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.sections.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.services.gid),
@@ -102,8 +102,10 @@ async function loadDataSheet() {
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.footer.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.crops.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.roadmap.gid),
+                // Optional tab: without a "config" row in the index tab every setting keeps its default
+                ds.config ? fetchGoogleSheetsCSVAsJson(ds.gid, ds.config.gid) : Promise.resolve([]),
             ]);
-            parseData(a, b, c, d, e, f, g, h, i, j);
+            parseData(a, b, c, d, e, f, g, h, i, j, k);
             createFloatingSaveButton(window.appData);
         } catch (e) {
             console.error("Error cargando base de datos:", e);
@@ -112,8 +114,69 @@ async function loadDataSheet() {
     document.dispatchEvent(new Event("appDataReady"));
 }
 
-function parseData(menu, sections, services, predators, methodology, projects, idi, footer, crops, roadmap) {
+// "config" tab: one setting per row, columns Variable | Tipo | Valor. Every row ends up in
+// appData.config converted by its Tipo (booleano, numero, numero decimal, texto; case and accents
+// ignored). Settings the code relies on are declared in CONFIG_DEFAULTS: a missing, empty or
+// invalid value, or one of another type, falls back to the default (with a console warning).
+const CONFIG_DEFAULTS = {
+    carrousel_arrows: false,
+};
+
+const CONFIG_TYPES = {
+    "booleano": raw => {
+        const v = raw.toLowerCase();
+        if (["si", "sí", "true"].includes(v)) return true;
+        if (["no", "false"].includes(v)) return false;
+        throw new Error("se esperaba SI o NO");
+    },
+    "numero": raw => {
+        if (!/^[-+]?\d+$/.test(raw)) throw new Error("se esperaba un número entero");
+        return Number(raw);
+    },
+    "numero decimal": raw => {
+        const v = raw.replace(",", ".");
+        if (!/^[-+]?(\d+\.?\d*|\.\d+)$/.test(v)) throw new Error("se esperaba un número (decimales con coma o punto)");
+        return Number(v);
+    },
+    "texto": raw => raw,
+};
+
+function normalizeConfigType(type) {
+    return String(type ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function parseConfig(rows) {
+    const config = {};
+    rows.forEach(row => {
+        const name = String(row["Variable"] ?? "").trim();
+        const raw = String(row["Valor"] ?? "").trim();
+        if (!name || raw === "") return;
+        const type = normalizeConfigType(row["Tipo"]);
+        const convert = CONFIG_TYPES[type];
+        if (!convert) {
+            console.warn(`Config "${name}": tipo "${row["Tipo"] ?? ""}" no reconocido; se ignora.`);
+            return;
+        }
+        try {
+            config[name] = convert(raw);
+        } catch (e) {
+            console.warn(`Config "${name}" = "${raw}": ${e.message}; se ignora.`);
+        }
+    });
+    for (const [name, fallback] of Object.entries(CONFIG_DEFAULTS)) {
+        if (!(name in config)) {
+            config[name] = fallback;
+        } else if (typeof config[name] !== typeof fallback) {
+            console.warn(`Config "${name}": se esperaba ${typeof fallback} y llegó ${typeof config[name]}; se usa ${fallback}.`);
+            config[name] = fallback;
+        }
+    }
+    return config;
+}
+
+function parseData(menu, sections, services, predators, methodology, projects, idi, footer, crops, roadmap, config = []) {
     window.appData = {
+        config: parseConfig(config),
         menu: menu
             .filter(x => isEnabled(x["Habilitado"]))
             .map(x => ({
@@ -147,6 +210,12 @@ function parseData(menu, sections, services, predators, methodology, projects, i
                     modal: hasModal,
                     modalImage: hasModal ? (x["ImagenModal"] ?? "") : "",
                     sheet: hasModal ? (x["Ficha"] ?? "") : "",
+                    // Carousel position per number of crops on screen (validated in script.js)
+                    order1: String(x["Orden 1"] ?? "").trim(),
+                    order2: String(x["Orden 2"] ?? "").trim(),
+                    order3: String(x["Orden 3"] ?? "").trim(),
+                    order4: String(x["Orden 4"] ?? "").trim(),
+                    order5: String(x["Orden 5"] ?? "").trim(),
                 };
             }),
         methodology: methodology
@@ -725,9 +794,14 @@ window.addEventListener("popstate", () => {
 // 3) Interceptar clicks en <a> que apunten a páginas de detalle
 //    (ej: "Ver historia completa" en roadmap, etc.)
 document.addEventListener("click", (e) => {
+    // Already handled (e.g. onclick="window.open(...);return false", which window.open above
+    // has just navigated): resolving its href="#" against the new URL would push the page twice.
+    if (e.defaultPrevented) return;
     const link = e.target.closest("a[href]");
     if (!link) return;
-    const detail = parseDetailUrl(link.getAttribute("href"));
+    const href = link.getAttribute("href");
+    if (href.startsWith("#")) return;
+    const detail = parseDetailUrl(href);
     if (detail) {
         e.preventDefault();
         window.history.pushState(

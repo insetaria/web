@@ -229,6 +229,9 @@ function renderWhere(section) {
         whereSection.style.color = section.font;
     }
 
+    // Sheet "config" → carrousel_arrows; false when missing (e.g. database.js exported before it existed)
+    const showArrows = database.config?.carrousel_arrows === true;
+
     whereSection.innerHTML = `
         <div class="container">
             ${section.title ? `<h2 class="text-shadow">${section.title}</h2>` : ''}
@@ -238,10 +241,12 @@ function renderWhere(section) {
             </div>
             <div class="where-content">
                 ${database.crops && database.crops.length > 0 ?
-                    `<div class="crops-content">
+                    `<div class="crops-carousel">
+                     ${showArrows ? `<button type="button" class="crops-arrow crops-arrow-prev" aria-label="Anterior"><i class="icofont-rounded-left"></i></button>` : ''}
+                     <div class="crops-content">
                         <div class="crops-track">
-                            ${database.crops.map(crop => `
-                                <div class="crop-entry">
+                            ${database.crops.map((crop, i) => `
+                                <div class="crop-entry" data-crop-index="${i}">
                                     ${crop.image ? `
                                         <img
                                             src="${resolveAsset(crop.image)}"
@@ -254,6 +259,8 @@ function renderWhere(section) {
                                 </div>
                             `).join('')}
                         </div>
+                     </div>
+                     ${showArrows ? `<button type="button" class="crops-arrow crops-arrow-next" aria-label="Siguiente"><i class="icofont-rounded-right"></i></button>` : ''}
                     </div>`
                 : ''}
             </div>
@@ -288,10 +295,54 @@ function renderWhere(section) {
     initCropsCarousel(whereSection);
 }
 
+/**
+ * Order of the crops in the carousel when `visible` crops fit on screen, as indexes into `crops`.
+ * Each crop may ask for a 1-based position in `order<visible>` (Sheet columns "Orden 1".."Orden 5").
+ * Crops with a valid position are placed first, in row order; a taken position moves the crop to
+ * the next free one (or the previous one, at the end). A position past the end means "last".
+ * Crops without a position fill the remaining gaps in row order. Invalid values (not a positive
+ * integer) are ignored with a console warning. Always returns every index exactly once.
+ * @param {Array<Object>} crops
+ * @param {number} visible
+ * @returns {number[]}
+ */
+function computeCropOrder(crops, visible) {
+    const total = crops.length;
+    const slots = new Array(total).fill(null);
+    const placed = new Set();
+    const key = 'order' + visible;
+
+    crops.forEach((crop, i) => {
+        const raw = String(crop[key] ?? '').trim();
+        if (!raw) return;
+        if (!/^\d+$/.test(raw) || Number(raw) < 1) {
+            console.warn(`Cultivo "${crop.title}": "Orden ${visible}" = "${raw}" no es una posición válida; se ignora.`);
+            return;
+        }
+        const wanted = Math.min(Number(raw), total) - 1;
+        let slot = -1;
+        for (let s = wanted; s < total && slot < 0; s++) if (slots[s] === null) slot = s;
+        for (let s = wanted - 1; s >= 0 && slot < 0; s--) if (slots[s] === null) slot = s;
+        slots[slot] = i;
+        placed.add(i);
+    });
+
+    let next = 0;
+    crops.forEach((_crop, i) => {
+        if (placed.has(i)) return;
+        while (slots[next] !== null) next++;
+        slots[next] = i;
+    });
+    return slots;
+}
+
 function initCropsCarousel(scope) {
     const container = scope.querySelector('.crops-content');
     const track = scope.querySelector('.crops-track');
     if (!container || !track) return;
+    const carousel = container.closest('.crops-carousel') || container;
+    const prevButton = carousel.querySelector('.crops-arrow-prev');
+    const nextButton = carousel.querySelector('.crops-arrow-next');
 
     const entries = Array.from(track.children);
     if (entries.length === 0) return;
@@ -353,8 +404,40 @@ function initCropsCarousel(scope) {
         setX(basePosition() - getStep() * index, animated);
     }
 
+    // Real on-screen translate (it differs from currentX while an animation is running).
+    function readX() {
+        try {
+            return new DOMMatrixReadOnly(getComputedStyle(track).transform).m41;
+        } catch (e) {
+            return currentX;
+        }
+    }
+
+    // Freezes the track where it is and brings index back into 0..total-1 by jumping to the
+    // identical clone, so a drag or arrow click in the middle of an animation never runs out
+    // of clones. fromPosition: take the index from what is on screen instead of the target.
+    function settle(fromPosition) {
+        const step = getStep();
+        if (!step) return;
+        let x = readX();
+        const i = fromPosition ? Math.round((basePosition() - x) / step) : index;
+        const wrapped = ((i % total) + total) % total;
+        x += (i - wrapped) * step;
+        index = wrapped;
+        setX(x, false);
+        void track.offsetWidth; // apply the jump before the next animated move
+    }
+
     function advance() {
         goToIndex(index + 1, true);
+    }
+
+    function moveBy(direction) {
+        if (!isActive) return;
+        stop();
+        settle(false);
+        goToIndex(index + direction, true);
+        start();
     }
 
     function start() {
@@ -372,16 +455,17 @@ function initCropsCarousel(scope) {
         if (isActive) return;
         isActive = true;
 
-        const clonesEnd = entries.map(e => e.cloneNode(true));
-        const clonesStart = entries.map(e => e.cloneNode(true));
+        const ordered = Array.from(track.children); // originals, in the current carousel order
+        const clonesEnd = ordered.map(e => e.cloneNode(true));
+        const clonesStart = ordered.map(e => e.cloneNode(true));
         clonesEnd.forEach(c => track.appendChild(c));
         clonesStart.reverse().forEach(c => track.insertBefore(c, track.firstChild));
 
-        clonesEnd.forEach((node, i) => attachClickListener(node, database.crops[i]));
-        clonesStart.forEach((node, i) => attachClickListener(node, database.crops[entries.length - 1 - i]));
+        [...clonesEnd, ...clonesStart].forEach(node => attachClickListener(node, database.crops[Number(node.dataset.cropIndex)]));
 
         container.style.cursor = 'grab';
         container.style.userSelect = 'none';
+        carousel.classList.add('is-active');
 
         requestAnimationFrame(() => {
             setX(basePosition() - getStep() * index, false);
@@ -405,6 +489,7 @@ function initCropsCarousel(scope) {
 
         container.style.cursor = '';
         container.style.userSelect = '';
+        carousel.classList.remove('is-active');
     }
 
     function evaluate() {
@@ -426,27 +511,57 @@ function initCropsCarousel(scope) {
         }
     });
 
-    // --- Drag ---
+    // --- Drag / swipe ---
+    // A short swipe is enough: past DRAG_THRESHOLD of a card (or a quick flick) moves one card
+    // in that direction; mostly vertical touch gestures are left to the page scroll.
+    const DRAG_THRESHOLD = 0.15;
+    const FLICK_SPEED = 0.3;   // px per ms, averaged over the last FLICK_WINDOW ms
+    const FLICK_WINDOW = 80;
     let isDragging = false;
+    let dragDecided = false;
     let dragStartX = 0;
+    let dragStartY = 0;
     let dragStartTranslate = 0;
+    let dragStartIndex = 0;
+    let moveSamples = []; // [time, clientX] of recent moves, to measure the flick speed
     let suppressNextClick = false;
 
-    function onDragStart(clientX) {
+    function onDragStart(clientX, clientY, isTouch) {
         if (!isActive) return;
         isDragging = true;
+        dragDecided = !isTouch; // a mouse drag is always horizontal
         dragStartX = clientX;
+        dragStartY = clientY;
+        moveSamples = [[performance.now(), clientX]];
+        stop();
+        settle(true);
+        dragStartIndex = index;
         dragStartTranslate = currentX;
         container.classList.add('dragging');
-        stop();
     }
 
-    function onDragMove(clientX) {
+    function cancelDrag() {
+        isDragging = false;
+        container.classList.remove('dragging');
+        goToIndex(dragStartIndex, true);
+        start();
+    }
+
+    function onDragMove(clientX, clientY) {
         if (!isActive || !isDragging) return;
         const delta = clientX - dragStartX;
+        if (!dragDecided) {
+            const dy = clientY - dragStartY;
+            if (Math.abs(delta) < 6 && Math.abs(dy) < 6) return;
+            if (Math.abs(dy) > Math.abs(delta)) { cancelDrag(); return; }
+            dragDecided = true;
+        }
         if (Math.abs(delta) > 3) {
             suppressNextClick = true;
         }
+        const now = performance.now();
+        moveSamples.push([now, clientX]);
+        while (moveSamples.length > 2 && now - moveSamples[0][0] > FLICK_WINDOW) moveSamples.shift();
         setX(dragStartTranslate + delta, false);
     }
 
@@ -456,9 +571,17 @@ function initCropsCarousel(scope) {
         container.classList.remove('dragging');
 
         const step = getStep();
-        const offset = currentX - basePosition();
-        let newIndex = Math.round(-offset / step);
-        goToIndex(newIndex, true);
+        const delta = currentX - dragStartTranslate;
+        const steps = step ? -delta / step : 0;
+        let moved = Math.trunc(steps);
+        const rest = steps - moved;
+        const first = moveSamples[0];
+        const last = moveSamples[moveSamples.length - 1];
+        const recent = performance.now() - last[0] < 100;
+        const velocity = last[0] > first[0] ? (last[1] - first[1]) / (last[0] - first[0]) : 0;
+        const flick = recent && Math.abs(velocity) > FLICK_SPEED && Math.sign(-velocity) === Math.sign(steps);
+        if (Math.abs(rest) > DRAG_THRESHOLD || flick) moved += Math.sign(steps);
+        goToIndex(dragStartIndex + moved, true);
 
         start();
     }
@@ -471,15 +594,31 @@ function initCropsCarousel(scope) {
         }
     }, true);
 
-    container.addEventListener('mousedown', (e) => onDragStart(e.clientX));
-    window.addEventListener('mousemove', (e) => onDragMove(e.clientX));
+    // Browsers replay a tap as mouse events after touchend; ignore them or they would stop the
+    // slide the swipe just started.
+    let lastTouchTime = 0;
+    container.addEventListener('mousedown', (e) => {
+        if (e.button !== 0 || performance.now() - lastTouchTime < 800) return;
+        onDragStart(e.clientX, e.clientY, false);
+    });
+    window.addEventListener('mousemove', (e) => onDragMove(e.clientX, e.clientY));
     window.addEventListener('mouseup', onDragEnd);
 
-    container.addEventListener('touchstart', (e) => onDragStart(e.touches[0].clientX), { passive: true });
-    container.addEventListener('touchmove', (e) => onDragMove(e.touches[0].clientX), { passive: true });
-    container.addEventListener('touchend', onDragEnd);
+    container.addEventListener('touchstart', (e) => {
+        lastTouchTime = performance.now();
+        suppressNextClick = false;
+        onDragStart(e.touches[0].clientX, e.touches[0].clientY, true);
+    }, { passive: true });
+    container.addEventListener('touchmove', (e) => onDragMove(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+    container.addEventListener('touchend', () => { lastTouchTime = performance.now(); onDragEnd(); });
+    container.addEventListener('touchcancel', () => { if (isDragging) cancelDrag(); });
 
-    container.addEventListener('mouseenter', () => { isHovering = true; if (isActive && !isDragging) stop(); });
+    if (prevButton) prevButton.addEventListener('click', () => moveBy(-1));
+    if (nextButton) nextButton.addEventListener('click', () => moveBy(1));
+
+    // Touch screens fire a fake mouseenter on tap and never the mouseleave: only real hover pauses.
+    const canHover = window.matchMedia && window.matchMedia('(hover: hover)').matches;
+    container.addEventListener('mouseenter', () => { if (!canHover) return; isHovering = true; if (isActive && !isDragging) stop(); });
     container.addEventListener('mouseleave', () => { isHovering = false; if (isActive && !isDragging) start(); });
 
     document.addEventListener('visibilitychange', () => {
@@ -499,7 +638,19 @@ function initCropsCarousel(scope) {
     }, { threshold: 0, rootMargin: '-80px 0px -80px 0px' });
     observer.observe(container);
 
+    // The crop order depends on how many fit on screen: rebuild the track when that changes.
+    let orderedFor = null;
+    function applyOrder() {
+        const visible = getVisible();
+        if (visible === orderedFor) return false;
+        orderedFor = visible;
+        deactivate();
+        computeCropOrder(database.crops, visible).forEach(i => track.appendChild(entries[i]));
+        return true;
+    }
+
     window.addEventListener('resize', () => {
+        if (applyOrder()) { evaluate(); return; }
         const wasActive = isActive;
         evaluate();
         if (isActive && wasActive) {
@@ -507,6 +658,7 @@ function initCropsCarousel(scope) {
         }
     });
 
+    applyOrder();
     evaluate();
 }
 
