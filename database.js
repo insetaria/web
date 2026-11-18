@@ -566,6 +566,9 @@ window.appData = {
       "description": "",
       "link": "https://www.iberaval.es"
     }
-  ]
+  ],
+  "config": {
+    "carrousel_arrows": true
+  }
 };
 document.dispatchEvent(new Event("appDataReady"));
