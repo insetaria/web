@@ -187,24 +187,47 @@ function renderMenu() {
     window.addEventListener('scroll', updateActiveMenu);
 }
 
-function renderHero(section) {
+// Hero layouts: the full-screen original plus low full-width banners (no visible h1: subtitle as
+// the lead, text lines beside/under it). Every layout cross-fades the Fondo images (one per line).
+const HERO_VARIANTS = {
+    clasico: { label: "Pantalla completa", banner: false },
+    banner: { label: "Banner", banner: true },
+    "banner-divisor": { label: "Banner con divisor", banner: true },
+    "banner-centrado": { label: "Banner centrado", banner: true },
+};
+const HERO_INTERVAL_DEFAULT = 4;
+let heroSlideshowTimer = null;
+
+function renderHero(section, variantOverride) {
+    const variantKey = variantOverride || resolveSectionVariant("hero", HERO_VARIANTS, "clasico");
+    const variant = HERO_VARIANTS[variantKey];
     const heroSection = document.getElementById('hero') || document.createElement('section');
     heroSection.id = 'hero';
     heroSection.role= 'main';
-    if (section.background) heroSection.style.backgroundImage = `url(${resolveAsset(section.background)})`;
+    heroSection.className = `hero--${variantKey}${variant.banner ? " hero-banner" : ""}`;
+
+    // Fondo: one image per line (cross-fade); a color line (#…, rgb…, hsl…) sets the base color;
+    // "# <url>" (hash + space) comments a line out
+    const backgrounds = splitLines(section.background).filter(line => !/^#(\s|$)/.test(line));
+    const isColor = v => /^(#|rgba?\(|hsla?\()/i.test(v);
+    const images = backgrounds.filter(v => !isColor(v));
+    heroSection.style.backgroundImage = "";
+    heroSection.style.backgroundColor = backgrounds.find(isColor) || "";
+
+    const lines = splitLines(section.text);
+    const content = variant.banner
+        ? `<h1 class="visually-hidden">${section.title}</h1>
+            <div class="hero-banner-content">
+                ${section.subtitle && section.subtitle !== "--" ? `<h2 class="hero-lead">${section.subtitle}</h2>` : ""}
+                ${lines.length ? `<h3 class="hero-side">${lines.join("<br>")}</h3>` : ""}
+            </div>`
+        : `<h1>${section.title}</h1>
+            <h2>${section.subtitle}</h2>
+            ${lines.map(line => `<h3>${line}</h3>`).join('')}`;
     heroSection.innerHTML = `
+        ${images.map((img, i) => `<div class="hero-bg${i === 0 ? " is-active" : ""}" style="background-image: url('${resolveAsset(img)}')"></div>`).join("")}
         <div class="container">
-            <a class="nolink" ${section.link ? `onclick="smoothScroll('${section.link}')"` : ''}>
-                <h1>${section.title}</h1>
-                <h2>${section.subtitle}</h2>
-                ${section.text
-                    .split('\n')
-                    .map(line => line.trim())
-                    .filter(Boolean)
-                    .map(line => `<h3>${line}</h3>`)
-                    .join('')
-                }
-            </a>
+            <a class="nolink" ${section.link ? `onclick="smoothScroll('${section.link}')"` : ''}>${content}</a>
         </div>
     `;
     if (section.font) {
@@ -213,6 +236,25 @@ function renderHero(section) {
     if (!document.getElementById('hero')) {
         document.body.append(heroSection);
     }
+    startHeroSlideshow(heroSection);
+    window.mountVariantSwitcher?.(heroSection, {
+        key: "hero", variants: HERO_VARIANTS, current: variantKey, rerender: v => renderHero(section, v),
+    });
+}
+
+/** Cycles the .hero-bg layers every config "hero_interval" seconds (CSS does the fade). */
+function startHeroSlideshow(root) {
+    clearInterval(heroSlideshowTimer);
+    const layers = root.querySelectorAll(".hero-bg");
+    if (layers.length < 2) return;
+    const seconds = Number(database.config?.hero_interval) > 0 ? Number(database.config.hero_interval) : HERO_INTERVAL_DEFAULT;
+    let current = 0;
+    heroSlideshowTimer = setInterval(() => {
+        if (!root.isConnected) return clearInterval(heroSlideshowTimer);
+        layers[current].classList.remove("is-active");
+        current = (current + 1) % layers.length;
+        layers[current].classList.add("is-active");
+    }, seconds * 1000);
 }
 
 function renderWhere(section) {
@@ -660,6 +702,172 @@ function initCropsCarousel(scope) {
 
     applyOrder();
     evaluate();
+}
+
+// ============================================================
+//  Section layout variants. A section with several layouts declares a table {key: {label, …}};
+//  prod uses config "<section>_variant" (or the section's default), the prototype adds a switcher
+//  (window.mountVariantSwitcher / window.getPreviewVariant, defined only in prototype.js).
+// ============================================================
+
+function normalizeVariantKey(value) {
+    return String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/\s+/g, "-");
+}
+
+/** Layout key: prototype pick > config "<sectionKey>_variant" > `fallback` (prototype: first layout if none). */
+function resolveSectionVariant(sectionKey, variants, fallback = null) {
+    const picked = normalizeVariantKey(window.getPreviewVariant?.(sectionKey));
+    if (variants[picked]) return picked;
+    const raw = database.config?.[`${sectionKey}_variant`];
+    const configured = normalizeVariantKey(raw);
+    if (variants[configured]) return configured;
+    if (configured) console.warn(`Config "${sectionKey}_variant" = "${raw}": diseño desconocido (${Object.keys(variants).join(", ")}).`);
+    return fallback || (window.APP_GID ? Object.keys(variants)[0] : null);
+}
+
+function splitLines(text) {
+    return String(text ?? "").split("\n").map(line => line.trim()).filter(line => line && line !== "--");
+}
+
+// ============================================================
+//  Temas (#topics): a set of topics, each with its own paragraphs; clicking a topic shows its
+//  content inside the section. Several layouts (TOPICS_VARIANTS) share one selection controller.
+//  Prod renders only the layout named in config "topics_variant" (none → section hidden); the
+//  prototype adds a layout switcher (prototype.js) and falls back to the first layout.
+// ============================================================
+
+/**
+ * Layouts for the topics section. Each builds the markup from the topic list: triggers carry
+ * data-topic="<i>", panels data-topic-panel="<i>". `collapsible` lets a click close the open topic.
+ */
+const TOPICS_VARIANTS = {
+    pestanas: {
+        label: "Pestañas",
+        collapsible: false,
+        build: items => `
+            <div class="topics-tabs" role="tablist">${items.map((t, i) => topicTrigger(t, i, "topics-tab", "tab")).join("")}</div>
+            <div class="topics-panels">${items.map((t, i) => topicPanel(t, i)).join("")}</div>`,
+    },
+    lateral: {
+        label: "Lista lateral",
+        collapsible: false,
+        build: items => `
+            <div class="topics-side">
+                <div class="topics-side-list" role="tablist">${items.map((t, i) => topicTrigger(t, i, "topics-side-item", "tab")).join("")}</div>
+                <div class="topics-panels">${items.map((t, i) => topicPanel(t, i)).join("")}</div>
+            </div>`,
+    },
+    tarjetas: {
+        label: "Tarjetas",
+        collapsible: true,
+        build: items => `
+            <div class="topics-cards">${items.map((t, i) => topicTrigger(t, i, "topics-card", "button")).join("")}</div>
+            <div class="topics-panels">${items.map((t, i) => topicPanel(t, i)).join("")}</div>`,
+    },
+    acordeon: {
+        label: "Acordeón",
+        collapsible: true,
+        build: items => `
+            <div class="topics-accordion">${items.map((t, i) => `
+                <div class="topics-accordion-item">
+                    ${topicTrigger(t, i, "topics-accordion-head", "button")}
+                    ${topicPanel(t, i)}
+                </div>`).join("")}
+            </div>`,
+    },
+};
+
+function topicTrigger(topic, index, cls, role) {
+    const icon = topic.icon && topic.icon !== "--" ? `<i class="${topic.icon} topics-icon"></i>` : "";
+    const summary = topic.summary && topic.summary !== "--" ? `<span class="topics-summary">${topic.summary}</span>` : "";
+    return `<button type="button" class="${cls}" data-topic="${index}" role="${role}">
+        ${icon}<span class="topics-title">${topic.title}</span>${summary}
+    </button>`;
+}
+
+function topicPanel(topic, index) {
+    const image = topic.image && topic.image !== "--"
+        ? `<img class="topics-image" src="${resolveAsset(topic.image)}" alt="${topic.title}" loading="lazy">` : "";
+    return `<div class="topics-panel${image ? " has-image" : ""}" data-topic-panel="${index}" role="region" hidden>
+        <div class="topics-text"><h3>${topic.title}</h3>${renderParagraphs(topic.text)}</div>${image}
+    </div>`;
+}
+
+/** Section header + topics to render: Sheet data, else the prototype's sample (window.TOPICS_DEMO). */
+function getTopicsData() {
+    const section = database.sections.find(s => s.id === "#topics");
+    const items = database.topics || [];
+    if (section && items.length) return { section, items, demo: false };
+    const demo = window.TOPICS_DEMO;
+    if (demo) return { section: section || demo.section, items: items.length ? items : demo.items, demo: !items.length };
+    return null;
+}
+
+/** Shows topic `index` (or none with -1) and syncs aria state of every trigger. */
+function selectTopic(root, index) {
+    root.querySelectorAll("[data-topic]").forEach(btn => {
+        const on = Number(btn.dataset.topic) === index;
+        btn.classList.toggle("is-active", on);
+        btn.setAttribute(btn.getAttribute("role") === "tab" ? "aria-selected" : "aria-expanded", String(on));
+    });
+    root.querySelectorAll("[data-topic-panel]").forEach(panel => {
+        panel.hidden = Number(panel.dataset.topicPanel) !== index;
+    });
+}
+
+function renderTopics(variantOverride) {
+    const data = getTopicsData();
+    const variantKey = variantOverride || resolveSectionVariant("topics", TOPICS_VARIANTS);
+    const existing = document.getElementById("topics");
+    if (!data || !variantKey) {
+        existing?.remove();
+        document.querySelector('.variant-switcher[data-for="topics"]')?.remove();
+        return;
+    }
+    const { section, items } = data;
+    const variant = TOPICS_VARIANTS[variantKey];
+    const sec = existing || document.createElement("section");
+    sec.id = "topics";
+    sec.role = "contentinfo";
+    sec.className = `topics topics--${variantKey}`;
+    const bg = section.background && section.background !== "--" ? section.background : "";
+    sec.style.backgroundColor = bg && !/\.(jpe?g|png|webp|gif|svg)$/i.test(bg) ? bg : "";
+    sec.style.backgroundImage = bg && /\.(jpe?g|png|webp|gif|svg)$/i.test(bg) ? `url(${resolveAsset(bg)})` : "";
+    sec.style.color = section.font && section.font !== "--" ? section.font : "";
+    const has = v => v && v !== "--";
+    sec.innerHTML = `
+        <div class="container">
+            <div class="topics-header">
+                ${has(section.title) ? `<h2 class="text-shadow">${section.title}</h2>` : ""}
+                ${has(section.subtitle) ? `<h3>${section.subtitle}</h3>` : ""}
+                ${has(section.text) ? `<div class="topics-intro">${renderParagraphs(section.text)}</div>` : ""}
+            </div>
+            <div class="topics-body">${variant.build(items)}</div>
+        </div>`;
+    if (!existing) {
+        // Always right before the crops section, whatever was rendered first
+        const where = document.getElementById("where");
+        where ? where.before(sec) : document.body.append(sec);
+    }
+    let current = variant.collapsible ? -1 : 0;
+    selectTopic(sec, current);
+    sec.querySelectorAll("[data-topic]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const index = Number(btn.dataset.topic);
+            current = variant.collapsible && index === current ? -1 : index;
+            selectTopic(sec, current);
+            // On small screens the panel can open below the fold (e.g. under the cards grid)
+            const panel = sec.querySelector(`[data-topic-panel="${current}"]`);
+            if (panel && panel.getBoundingClientRect().top > window.innerHeight - 120) {
+                panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }
+        });
+    });
+    sec.querySelectorAll(".text-shadow").forEach(applyTextShadow);
+    window.mountVariantSwitcher?.(sec, {
+        key: "topics", variants: TOPICS_VARIANTS, current: variantKey,
+        note: data.demo ? "contenido de ejemplo" : "", rerender: v => renderTopics(v),
+    });
 }
 
 function renderAbout(section) {
@@ -1256,6 +1464,8 @@ function renderSections() {
     
     const heroData = database.sections.find(s => s.id === "#hero");
     if (heroData) renderHero(heroData);
+
+    renderTopics();
 
     const where = database.sections.find(s => s.id === "#where");
     if (where) renderWhere(where);

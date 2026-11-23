@@ -91,7 +91,7 @@ async function loadDataSheet() {
     const ds = await buildDataStructure();
     if(ds){
         try {
-            const [a, b, c, d, e, f, g, h, i, j, k] = await Promise.all([
+            const [a, b, c, d, e, f, g, h, i, j, k, l] = await Promise.all([
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.menu.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.sections.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.services.gid),
@@ -104,9 +104,11 @@ async function loadDataSheet() {
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.roadmap.gid),
                 // Optional tab: without a "config" row in the index tab every setting keeps its default
                 ds.config ? fetchGoogleSheetsCSVAsJson(ds.gid, ds.config.gid) : Promise.resolve([]),
+                // Optional tab: without a "topics" row the prototype shows sample topics (TOPICS_DEMO)
+                ds.topics ? fetchGoogleSheetsCSVAsJson(ds.gid, ds.topics.gid) : Promise.resolve([]),
             ]);
-            parseData(a, b, c, d, e, f, g, h, i, j, k);
-            createFloatingSaveButton(window.appData);
+            parseData(a, b, c, d, e, f, g, h, i, j, k, l);
+            createToolsButton();
         } catch (e) {
             console.error("Error cargando base de datos:", e);
         }
@@ -120,6 +122,12 @@ async function loadDataSheet() {
 // invalid value, or one of another type, falls back to the default (with a console warning).
 const CONFIG_DEFAULTS = {
     carrousel_arrows: false,
+    // Layout of the #topics section in prod (pestañas, lateral, tarjetas, acordeón); empty → hidden
+    topics_variant: "",
+    // Hero layout (clasico, banner, banner divisor, banner centrado); empty → clasico
+    hero_variant: "",
+    // Seconds between hero background images (Fondo with several lines)
+    hero_interval: 4,
 };
 
 const CONFIG_TYPES = {
@@ -174,9 +182,19 @@ function parseConfig(rows) {
     return config;
 }
 
-function parseData(menu, sections, services, predators, methodology, projects, idi, footer, crops, roadmap, config = []) {
+function parseData(menu, sections, services, predators, methodology, projects, idi, footer, crops, roadmap, config = [], topics = []) {
     window.appData = {
         config: parseConfig(config),
+        topics: topics
+            .filter(x => isEnabled(x["Habilitado"]))
+            .map(x => ({
+                enabled: x["Habilitado"],
+                title: x["Título"],
+                icon: x["Icono"] ?? "",
+                summary: x["Resumen"] ?? "",
+                text: x["Texto"] ?? "",
+                image: x["Imagen"] ?? "",
+            })),
         menu: menu
             .filter(x => isEnabled(x["Habilitado"]))
             .map(x => ({
@@ -368,57 +386,51 @@ function assignCollectionIds(collection, items) {
     });
 }
 
-function createFloatingSaveButton(appData) {
+// Prototype tools: floating 🛠️ button (bottom-left, shown on hover) with a menu of actions.
+const SWITCHERS_HIDDEN_KEY = "insectaria_hide_variant_switchers";
+
+function areSwitchersHidden() {
+    try { return localStorage.getItem(SWITCHERS_HIDDEN_KEY) === "1"; } catch (_e) { return false; }
+}
+
+function setSwitchersHidden(hidden) {
+    document.documentElement.classList.toggle("hide-variant-switchers", hidden);
+    try { localStorage.setItem(SWITCHERS_HIDDEN_KEY, hidden ? "1" : "0"); } catch (_e) { /* private mode */ }
+}
+
+function createToolsButton() {
     const container = document.createElement("div");
-    Object.assign(container.style, {
-        position: "fixed",
-        bottom: "0",
-        left: "0",
-        width: "120px",
-        height: "120px",
-        zIndex: "999998",
-        pointerEvents: "auto"
+    container.className = "proto-tools";
+    container.innerHTML = `
+        <div class="proto-tools-menu" hidden>
+            <button type="button" data-action="save">💾 Guardar (exportar ZIP)</button>
+            <button type="button" data-action="switchers"></button>
+        </div>
+        <button type="button" class="proto-tools-toggle" title="Herramientas del prototipo">🛠️</button>`;
+    const menu = container.querySelector(".proto-tools-menu");
+    const switchersItem = container.querySelector('[data-action="switchers"]');
+    const refreshLabels = () => {
+        switchersItem.textContent = areSwitchersHidden() ? "👁 Mostrar selectores de diseño" : "🙈 Ocultar selectores de diseño";
+    };
+    const setOpen = open => {
+        menu.hidden = !open;
+        container.classList.toggle("is-open", open);
+    };
+    container.querySelector(".proto-tools-toggle").addEventListener("click", () => {
+        refreshLabels();
+        setOpen(menu.hidden);
     });
-    const btn = document.createElement("button");
-    btn.innerText = "💾";
-
-    Object.assign(btn.style, {
-        position: "absolute",
-        bottom: "10px",
-        left: "10px",
-        width: "52px",
-        height: "52px",
-        borderRadius: "50%",
-        border: "none",
-        background: "#222",
-        color: "#fff",
-        fontSize: "24px",
-        cursor: "pointer",
-        opacity: "0",
-        transition: "opacity 0.25s, transform 0.15s",
-        zIndex: "999999"
-    });
-
-    container.addEventListener("mouseenter", () => {
-        btn.style.opacity = "1";
-    });
-
-    container.addEventListener("mouseleave", () => {
-        btn.style.opacity = "0";
-    });
-
-    btn.addEventListener("mouseenter", () => {
-        btn.style.transform = "scale(1.1)";
-    });
-
-    btn.addEventListener("mouseleave", () => {
-        btn.style.transform = "scale(1)";
-    });
-
-    btn.addEventListener("click", () => {
+    container.querySelector('[data-action="save"]').addEventListener("click", () => {
+        setOpen(false);
         handleCompleteExport();
     });
-    container.appendChild(btn);
+    switchersItem.addEventListener("click", () => {
+        setSwitchersHidden(!areSwitchersHidden());
+        setOpen(false);
+    });
+    document.addEventListener("click", e => {
+        if (!container.contains(e.target)) setOpen(false);
+    });
     document.body.appendChild(container);
 }
 
@@ -741,7 +753,7 @@ function parseDetailUrl(url) {
  */
 function clearRenderedBody() {
     document.body
-        .querySelectorAll("section, footer, #modal, #menu")
+        .querySelectorAll("section, footer, #modal, #menu, .variant-switcher")
         .forEach(el => el.remove());
     // Resetea el CSS inyectado para el detalle, porque al volver a la
     // home no estorba pero tampoco lo queremos duplicado al ir a otro.
@@ -812,3 +824,81 @@ document.addEventListener("click", (e) => {
         navigateSPA({ type: "detail", collection: detail.collection, slug: detail.slug });
     }
 });
+// ============================================================
+//  Sección de temas (#topics) — solo prototipo
+//  - TOPICS_DEMO: contenido de ejemplo mientras el Sheet no tenga la pestaña "topics" o la fila
+//    "#topics" en sections. No entra en appData, así que el 💾 nunca lo exporta.
+//  - Su selector de diseño es el genérico de más abajo (mountVariantSwitcher).
+// ============================================================
+
+window.TOPICS_DEMO = {
+    section: {
+        id: "#topics",
+        title: "AGRONOMÍA APLICADA",
+        subtitle: "MÁS QUE INSECTOS: ACOMPAÑAMOS TODO EL CULTIVO",
+        text: "Contenido de ejemplo: crea la pestaña «topics» y la fila «#topics» en sections para sustituirlo.",
+    },
+    items: [
+        {
+            title: "Agronomía", icon: "icofont-leaf", summary: "Diagnóstico y manejo del cultivo",
+            text: "Analizamos cada parcela como un sistema: suelo, variedad, riego, nutrición y entorno.\nDiseñamos el plan de manejo con el agricultor y lo ajustamos durante la campaña según lo que vemos en campo.",
+            image: "",
+        },
+        {
+            title: "Gestión integral", icon: "icofont-chart-flow-1", summary: "Del plan de campaña a la cosecha",
+            text: "Coordinamos tratamientos, sueltas de fauna auxiliar y labores para que encajen en el calendario del cultivo.\nUn único interlocutor para la sanidad vegetal de la explotación, con seguimiento y registro de cada actuación.",
+            image: "",
+        },
+        {
+            title: "Investigación", icon: "icofont-microscope", summary: "Ensayos en campo real",
+            text: "Probamos en parcelas comerciales nuevas estrategias de control antes de recomendarlas.\nColaboramos con centros de investigación para trasladar resultados al campo cuanto antes.",
+            image: "",
+        },
+        {
+            title: "Formación", icon: "icofont-education", summary: "Técnicos y agricultores",
+            text: "Jornadas y cursos sobre manejo integrado, identificación de plagas y uso de fauna auxiliar.\nFormación a medida para cooperativas y equipos técnicos.",
+            image: "",
+        },
+    ],
+};
+
+// ============================================================
+//  Selector de diseño por sección (solo prototipo). Las secciones con variantes (hero, topics…)
+//  llaman a mountVariantSwitcher tras pintarse; la elección se recuerda en este navegador y
+//  manda sobre la variable de config "<sección>_variant".
+// ============================================================
+
+function variantStorageKey(sectionKey) {
+    return `insectaria_variant_${sectionKey}`;
+}
+
+// Selectors hidden from the 🛠️ menu stay hidden after reloads
+document.documentElement.classList.toggle("hide-variant-switchers", areSwitchersHidden());
+
+window.getPreviewVariant = function (sectionKey) {
+    try {
+        return localStorage.getItem(variantStorageKey(sectionKey)) || "";
+    } catch (_e) {
+        return "";
+    }
+};
+
+/** Bar right before `sectionEl` with one button per layout; picking one re-renders the section. */
+window.mountVariantSwitcher = function (sectionEl, { key, variants, current, note = "", rerender }) {
+    document.querySelector(`.variant-switcher[data-for="${key}"]`)?.remove();
+    const bar = document.createElement("div");
+    bar.className = "variant-switcher";
+    bar.dataset.for = key;
+    bar.innerHTML = `
+        <span class="variant-switcher-label">Diseño «${key}»${note ? ` · ${note}` : ""}:</span>
+        ${Object.entries(variants).map(([k, v]) =>
+            `<button type="button" data-variant="${k}" class="${k === current ? "is-active" : ""}">${v.label}</button>`
+        ).join("")}`;
+    bar.querySelectorAll("[data-variant]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            try { localStorage.setItem(variantStorageKey(key), btn.dataset.variant); } catch (_e) { /* private mode */ }
+            rerender(btn.dataset.variant);
+        });
+    });
+    sectionEl.before(bar);
+};

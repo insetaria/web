@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link href="/assets/img/logos/icon.png" rel="icon">
+<meta name="theme-color" content="#4CAF50">
+<title>Insectaria (dev)</title>
+<link rel="stylesheet" href="/assets/app/launcher.css">
+</head>
+<body>
+<div id="app"></div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+window.LAUNCHER_CONFIG = {
+    env: "dev",
+    // OAuth client "Web - Panel de control DEV" of the new Google account (GCP project insectaria-dev)
+    clientId: "MTU2MjIyNjQxOTYxLWNzMHFzb3JwOTFlczhibnZtc3BqM2E3YnJxZ3A2aHYzLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29t",
+    bundles: [
+        "MXlvQXBrOXB1LVpmcGhpUmNPa0JxWDU4ZzgwV3VyTzdr", // control panel DEV copy (new account), "insectaria-dev-bundles/control-panel.js"
+        ""   // client viewer (user-ui) DEV copy, not created yet
+    ]
+};
+</script>
+<script src="/assets/app/launcher.js"></script>
+</body>
+</html>
