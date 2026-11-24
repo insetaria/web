@@ -195,7 +195,8 @@ const HERO_VARIANTS = {
     "banner-divisor": { label: "Banner con divisor", banner: true },
     "banner-centrado": { label: "Banner centrado", banner: true },
 };
-const HERO_INTERVAL_DEFAULT = 4;
+const HERO_INTERVAL_DEFAULT = 5;
+const HERO_FIRST_DELAY = 1;  // seconds before the first change after load (then every interval)
 let heroSlideshowTimer = null;
 
 function renderHero(section, variantOverride) {
@@ -242,19 +243,32 @@ function renderHero(section, variantOverride) {
     });
 }
 
-/** Cycles the .hero-bg layers every config "hero_interval" seconds (CSS does the fade). */
+/** Cycles the .hero-bg layers every config "hero_interval" seconds; each fade lasts the whole interval (CSS).
+ *  The first change starts HERO_FIRST_DELAY seconds after load. */
 function startHeroSlideshow(root) {
+    clearTimeout(heroSlideshowTimer);
     clearInterval(heroSlideshowTimer);
     const layers = root.querySelectorAll(".hero-bg");
     if (layers.length < 2) return;
     const seconds = Number(database.config?.hero_interval) > 0 ? Number(database.config.hero_interval) : HERO_INTERVAL_DEFAULT;
+    root.style.setProperty("--hero-fade", `${seconds}s`);
     let current = 0;
-    heroSlideshowTimer = setInterval(() => {
+    const step = () => {
         if (!root.isConnected) return clearInterval(heroSlideshowTimer);
-        layers[current].classList.remove("is-active");
+        const prev = layers[current];
         current = (current + 1) % layers.length;
-        layers[current].classList.add("is-active");
-    }, seconds * 1000);
+        const next = layers[current];
+        // Older layers drop to 0 instantly (hidden behind the active one), then reflow so the
+        // incoming layer's fade starts from 0; the outgoing one stays opaque underneath.
+        layers.forEach(l => { if (l !== prev) l.classList.remove("is-prev"); });
+        prev.classList.replace("is-active", "is-prev");
+        void next.offsetWidth;
+        next.classList.add("is-active");
+    };
+    heroSlideshowTimer = setTimeout(() => {
+        step();
+        heroSlideshowTimer = setInterval(step, seconds * 1000);
+    }, HERO_FIRST_DELAY * 1000);
 }
 
 function renderWhere(section) {
@@ -788,17 +802,31 @@ function topicTrigger(topic, index, cls, role) {
 function topicPanel(topic, index) {
     const image = topic.image && topic.image !== "--"
         ? `<img class="topics-image" src="${resolveAsset(topic.image)}" alt="${topic.title}" loading="lazy">` : "";
+    // Lead = the summary, shown by CSS only in layouts/breakpoints whose trigger hides it.
+    const lead = topic.summary && topic.summary !== "--" ? `<p class="topics-lead">${topic.summary}</p>` : "";
     return `<div class="topics-panel${image ? " has-image" : ""}" data-topic-panel="${index}" role="region" hidden>
-        <div class="topics-text"><h3>${topic.title}</h3>${renderParagraphs(topic.text)}</div>${image}
+        <div class="topics-text"><h3>${topic.title}</h3>${lead}${renderParagraphs(topic.text)}</div>${image}
     </div>`;
 }
 
 /** Section header + topics to render: Sheet data, else the prototype's sample (window.TOPICS_DEMO). */
 function getTopicsData() {
-    const section = database.sections.find(s => s.id === "#topics");
-    const items = database.topics || [];
+    return resolveSectionData("topics", window.TOPICS_DEMO);
+}
+
+/**
+ * Section row "#<key>" + its collection `database[key]`, else the prototype's sample `demo`
+ * ({ section, items }) or null. A "#<key>" row that exists but is disabled (empty or future
+ * date) hides the section: the sample only stands in while the Sheet has no such row at all.
+ */
+function resolveSectionData(key, demo) {
+    const id = `#${key}`;
+    const section = database.sections?.find(s => s.id === id);
+    const items = database[key] || [];
     if (section && items.length) return { section, items, demo: false };
-    const demo = window.TOPICS_DEMO;
+    const rowExists = (window.SHEET_SECTION_KEYS || window.appData?.sections?.map(s => s.id) || [])
+        .includes(id);
+    if (!section && rowExists) return null;
     if (demo) return { section: section || demo.section, items: items.length ? items : demo.items, demo: !items.length };
     return null;
 }
@@ -1441,21 +1469,378 @@ function applyTextShadow(el) {
     el.appendChild(clone);
 }
 
-function renderSectionSummary(section) {
-    const sec = document.getElementById(section.id.replace('#', '')) || document.createElement('section');
-    sec.id = section.id.replace('#', '');
-    const slug = (section.id || "").replace(/^#/, "").trim();
+// ============================================================
+//  Equipo (#team): personas agrupadas por "Grupo" (Equipo, Becarios, Colaboradores…) en el orden
+//  en que aparecen. Varios diseños (TEAM_VARIANTS); prod usa config "team_variant" (vacío →
+//  tarjetas), el prototipo añade el selector de diseño.
+// ============================================================
+
+const hasValue = v => v && String(v).trim() !== "" && v !== "--";
+
+/** [[group, [{ person, index }]]] in order of first appearance; `index` is the row in `items`. */
+function groupTeam(items) {
+    const groups = new Map();
+    items.forEach((person, index) => {
+        const group = (person.group || "").trim();
+        if (!groups.has(group)) groups.set(group, []);
+        groups.get(group).push({ person, index });
+    });
+    return [...groups];
+}
+
+/** Photo, or the person's initials when there is none. */
+function teamPhoto(person, cls = "team-photo") {
+    return hasValue(person.image)
+        ? `<img class="${cls}" src="${resolveAsset(person.image)}" alt="${person.name}" loading="lazy">`
+        : `<div class="${cls} team-photo-placeholder" aria-hidden="true"><span>${nameInitials(person.name)}</span></div>`;
+}
+
+function teamLink(person) {
+    return hasValue(person.link)
+        ? `<a class="team-link" href="${person.link}" target="_blank" rel="noopener">Ver perfil</a>` : "";
+}
+
+function teamRole(person) {
+    return hasValue(person.role) ? `<p class="team-role">${person.role}</p>` : "";
+}
+
+function teamText(person) {
+    return hasValue(person.text) ? `<div class="team-text">${renderParagraphs(person.text)}</div>` : "";
+}
+
+function teamCard(person) {
+    return `
+        <article class="team-card">
+            ${teamPhoto(person)}
+            <h3>${person.name}</h3>
+            ${teamRole(person)}${teamText(person)}${teamLink(person)}
+        </article>`;
+}
+
+/** One block per group: its title + a `gridClass` container of `card(person, index)`. */
+function teamGroups(items, card, gridClass = "team-grid") {
+    return groupTeam(items).map(([group, people]) => `
+        <div class="team-group">
+            ${group ? `<h2 class="team-group-title">${group}</h2>` : ""}
+            <div class="${gridClass}">${people.map(({ person, index }) => card(person, index)).join("")}</div>
+        </div>`).join("");
+}
+
+const TEAM_VARIANTS = {
+    tarjetas: {
+        label: "Tarjetas",
+        build: items => teamGroups(items, teamCard),
+    },
+    retratos: {
+        label: "Retratos",
+        build: items => teamGroups(items, person => `
+            <article class="team-portrait">
+                <div class="team-portrait-frame">
+                    ${teamPhoto(person, "team-portrait-photo")}
+                    <div class="team-portrait-caption"><h3>${person.name}</h3>${teamRole(person)}</div>
+                </div>
+                ${teamText(person)}${teamLink(person)}
+            </article>`, "team-portraits"),
+    },
+    lista: {
+        label: "Lista",
+        build: items => teamGroups(items, person => `
+            <article class="team-row">
+                ${teamPhoto(person, "team-row-photo")}
+                <div class="team-row-body">
+                    <h3>${person.name}</h3>
+                    ${teamRole(person)}${teamText(person)}${teamLink(person)}
+                </div>
+            </article>`, "team-list"),
+    },
+    compacto: {
+        label: "Compacto (ficha al pulsar)",
+        build: items => teamGroups(items, (person, index) => `
+            <button type="button" class="team-chip" data-person="${index}">
+                ${teamPhoto(person, "team-chip-photo")}
+                <span class="team-chip-name">${person.name}</span>
+                ${hasValue(person.role) ? `<span class="team-chip-role">${person.role}</span>` : ""}
+            </button>`, "team-chips"),
+        setup: (root, items) => {
+            root.querySelectorAll("[data-person]").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const person = items[Number(btn.dataset.person)];
+                    modal(person.name, `
+                        <div class="team-modal">
+                            ${teamPhoto(person)}
+                            ${teamRole(person)}${teamText(person)}${teamLink(person)}
+                        </div>`);
+                });
+            });
+        },
+    },
+    pestanas: {
+        label: "Pestañas por grupo",
+        build: items => {
+            const groups = groupTeam(items);
+            return `
+                <div class="team-tabs" role="tablist">${groups.map(([group], i) =>
+                    `<button type="button" class="team-tab" role="tab" data-team-tab="${i}">${group || "Equipo"}</button>`).join("")}</div>
+                ${groups.map(([, people], i) => `
+                    <div class="team-group team-tab-panel" data-team-panel="${i}" role="tabpanel">
+                        <div class="team-grid">${people.map(({ person }) => teamCard(person)).join("")}</div>
+                    </div>`).join("")}`;
+        },
+        setup: root => {
+            const select = i => {
+                root.querySelectorAll("[data-team-tab]").forEach(b => {
+                    const on = Number(b.dataset.teamTab) === i;
+                    b.classList.toggle("is-active", on);
+                    b.setAttribute("aria-selected", String(on));
+                });
+                root.querySelectorAll("[data-team-panel]").forEach(p => { p.hidden = Number(p.dataset.teamPanel) !== i; });
+            };
+            root.querySelectorAll("[data-team-tab]").forEach(b => b.addEventListener("click", () => select(Number(b.dataset.teamTab))));
+            select(0);
+        },
+    },
+};
+
+// ============================================================
+//  Cronología (#roadmap): hitos con Fecha, Título, Texto e Imagen. Diseños de la página
+//  (ROADMAP_VARIANTS, config "roadmap_variant", vacío → alterna) y de la tarjeta de portada
+//  (ROADMAP_SUMMARY_VARIANTS, config "roadmap_portada_variant", vacío → boton).
+// ============================================================
+
+function roadmapImage(item, cls) {
+    return hasValue(item.image) ? `<img class="${cls}" src="${resolveAsset(item.image)}" alt="${item.title}" loading="lazy">` : "";
+}
+
+function roadmapText(item) {
+    return hasValue(item.text) ? renderParagraphs(item.text) : "";
+}
+
+/** Prev/next arrows of a horizontal scroller; each hides at its end. */
+function setupScrollArrows(track, prev, next) {
+    const sync = () => {
+        prev.disabled = track.scrollLeft <= 2;
+        next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 2;
+    };
+    const step = () => track.clientWidth * 0.8;
+    prev.addEventListener("click", () => track.scrollBy({ left: -step(), behavior: "smooth" }));
+    next.addEventListener("click", () => track.scrollBy({ left: step(), behavior: "smooth" }));
+    track.addEventListener("scroll", sync, { passive: true });
+    window.addEventListener("resize", sync);
+    sync();
+}
+
+const ROADMAP_VARIANTS = {
+    alterna: { label: "Línea alterna", build: renderTimeline },
+    lateral: {
+        label: "Línea lateral",
+        build: items => `
+            <ol class="rm-vertical">${items.map(item => `
+                <li class="rm-v-item">
+                    <span class="rm-v-date">${item.date}</span>
+                    <div class="rm-v-card${hasValue(item.image) ? " has-image" : ""}">
+                        ${roadmapImage(item, "rm-v-image")}
+                        <div class="rm-v-body"><h3>${item.title}</h3>${roadmapText(item)}</div>
+                    </div>
+                </li>`).join("")}
+            </ol>`,
+    },
+    horizontal: {
+        label: "Horizontal",
+        build: items => `
+            <div class="rm-h">
+                <button type="button" class="rm-h-arrow rm-h-prev" aria-label="Anterior">‹</button>
+                <ol class="rm-h-track">${items.map(item => `
+                    <li class="rm-h-item">
+                        <span class="rm-h-date">${item.date}</span>
+                        <span class="rm-h-dot"></span>
+                        <div class="rm-h-card">${roadmapImage(item, "rm-h-image")}<h3>${item.title}</h3>${roadmapText(item)}</div>
+                    </li>`).join("")}
+                </ol>
+                <button type="button" class="rm-h-arrow rm-h-next" aria-label="Siguiente">›</button>
+            </div>`,
+        setup: root => setupScrollArrows(root.querySelector(".rm-h-track"), root.querySelector(".rm-h-prev"), root.querySelector(".rm-h-next")),
+    },
+    pasos: {
+        label: "Pasos numerados",
+        build: items => `
+            <ol class="rm-steps">${items.map((item, i) => `
+                <li class="rm-step">
+                    ${roadmapImage(item, "rm-step-image")}
+                    <div class="rm-step-body">
+                        <span class="rm-step-num">${String(i + 1).padStart(2, "0")}</span>
+                        <span class="rm-step-date">${item.date}</span>
+                        <h3>${item.title}</h3>${roadmapText(item)}
+                    </div>
+                </li>`).join("")}
+            </ol>`,
+    },
+    diapositivas: {
+        label: "Diapositivas",
+        build: items => `
+            <div class="rm-slides">
+                <div class="rm-slides-nav" role="tablist">${items.map((item, i) => `
+                    <button type="button" class="rm-slides-tab" role="tab" data-slide="${i}"><span class="rm-slides-dot"></span>${item.date}</button>`).join("")}
+                </div>
+                ${items.map((item, i) => `
+                    <article class="rm-slide${hasValue(item.image) ? " has-image" : ""}" data-slide-panel="${i}" role="tabpanel">
+                        ${roadmapImage(item, "rm-slide-image")}
+                        <div class="rm-slide-body">
+                            <span class="rm-slide-date">${item.date}</span>
+                            <h3>${item.title}</h3>${roadmapText(item)}
+                            <div class="rm-slide-controls">
+                                <button type="button" data-slide-step="-1">‹ Anterior</button>
+                                <span>${i + 1} / ${items.length}</span>
+                                <button type="button" data-slide-step="1">Siguiente ›</button>
+                            </div>
+                        </div>
+                    </article>`).join("")}
+            </div>`,
+        setup: (root, items) => {
+            let current = 0;
+            const show = i => {
+                current = (i + items.length) % items.length;
+                root.querySelectorAll("[data-slide]").forEach(tab => {
+                    const on = Number(tab.dataset.slide) === current;
+                    tab.classList.toggle("is-active", on);
+                    tab.setAttribute("aria-selected", String(on));
+                    if (on) tab.scrollIntoView({ block: "nearest", inline: "nearest" });
+                });
+                root.querySelectorAll("[data-slide-panel]").forEach(panel => { panel.hidden = Number(panel.dataset.slidePanel) !== current; });
+            };
+            root.querySelectorAll("[data-slide]").forEach(tab => tab.addEventListener("click", () => show(Number(tab.dataset.slide))));
+            root.querySelectorAll("[data-slide-step]").forEach(btn => btn.addEventListener("click", () => show(current + Number(btn.dataset.slideStep))));
+            // First paint without scrolling the page to the nav
+            root.querySelectorAll("[data-slide-panel]").forEach(panel => { panel.hidden = panel.dataset.slidePanel !== "0"; });
+            root.querySelector('[data-slide="0"]')?.classList.add("is-active");
+        },
+    },
+};
+
+/** Title, subtitle and text of a section summary card. */
+function summaryHeader(section) {
+    return `
+        ${hasValue(section.title) ? `<h2 class="text-shadow">${section.title}</h2>` : ""}
+        ${hasValue(section.subtitle) ? `<h3>${section.subtitle}</h3>` : ""}
+        ${hasValue(section.text) ? `<p>${section.text}</p>` : ""}`;
+}
+
+const ROADMAP_SUMMARY_VARIANTS = {
+    boton: { label: "Texto y botón", build: (section, items, link) => summaryHeader(section) + link },
+    avance: {
+        label: "Avance de hitos",
+        build: (section, items, link) => `
+            ${summaryHeader(section)}
+            <ol class="rm-preview">${items.slice(0, 4).map(item => `
+                <li><span class="rm-preview-date">${item.date}</span><h4>${item.title}</h4></li>`).join("")}
+            </ol>
+            ${link}`,
+    },
+    dividido: {
+        label: "Imagen y texto",
+        build: (section, items, link) => {
+            const images = [...new Set(items.filter(item => hasValue(item.image)).map(item => item.image))].slice(0, 3);
+            return `
+                <div class="rm-split${images.length ? "" : " no-image"}">
+                    <div class="rm-split-text">${summaryHeader(section)}${link}</div>
+                    ${images.length ? `<div class="rm-split-media">${images.map(img => `<img src="${resolveAsset(img)}" alt="" loading="lazy">`).join("")}</div>` : ""}
+                </div>`;
+        },
+    },
+};
+
+// ============================================================
+//  Secciones con página propia (fila "#<clave>" con Pagina = si): en la portada una tarjeta
+//  resumen con botón; la página /sections/<clave>.html pinta su colección con `body`.
+//  `demo` (solo prototipo) da contenido de ejemplo mientras el Sheet no tenga la fila.
+// ============================================================
+
+// Each entry: `body(items)` → html, or `variants` ({ key: { label, build(items), setup?(root, items) } })
+// with a `fallback` layout for prod (config "<clave>_variant" picks another one). The home card can
+// have its own `summaryVariants` (signature (section, items, linkHtml) → html, config
+// "<clave>_portada_variant", default `summaryFallback`).
+const SECTION_PAGES = {
+    roadmap: {
+        linkText: "Ver historia completa", variants: ROADMAP_VARIANTS, fallback: "alterna",
+        summaryVariants: ROADMAP_SUMMARY_VARIANTS, summaryFallback: "boton",
+    },
+    team: { linkText: "Conocer al equipo", variants: TEAM_VARIANTS, fallback: "tarjetas", demo: () => window.TEAM_DEMO },
+};
+
+function getSectionPageData(key) {
+    return resolveSectionData(key, SECTION_PAGES[key]?.demo?.());
+}
+
+function renderTimeline(items) {
+    return `
+        <div class="timeline">
+            ${items.map((item, i) => `
+                <div class="timeline-item ${i % 2 === 0 ? 'left' : 'right'}">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-date">${item.date}</div>
+                    <div class="timeline-content">
+                        ${item.image ? `<img src="${resolveAsset(item.image)}" alt="${item.title}" class="timeline-image">` : ""}
+                        <h3>${item.title}</h3>
+                        <p>${item.text}</p>
+                    </div>
+                </div>
+            `).join('')}
+        </div>`;
+}
+
+/** Initials of a name for the photo placeholder ("Ana María López" → "AL"). */
+function nameInitials(name) {
+    const words = String(name || "").trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return "";
+    const first = words[0][0];
+    const last = words.length > 1 ? words[words.length - 1][0] : "";
+    return (first + last).toUpperCase();
+}
+
+/** Fills a section page's body: `cfg.body`, or the chosen layout of `cfg.variants` + its switcher. */
+function renderSectionPageBody(bodyEl, slug, data, variantOverride) {
+    const cfg = SECTION_PAGES[slug];
+    if (!cfg.variants) {
+        bodyEl.innerHTML = cfg.body(data.items);
+        return;
+    }
+    const variantKey = variantOverride || resolveSectionVariant(slug, cfg.variants, cfg.fallback);
+    bodyEl.className = `section-page-body ${slug}--${variantKey}`;
+    bodyEl.innerHTML = cfg.variants[variantKey].build(data.items);
+    cfg.variants[variantKey].setup?.(bodyEl, data.items);
+    window.mountVariantSwitcher?.(bodyEl, {
+        key: slug, variants: cfg.variants, current: variantKey,
+        note: data.demo ? "contenido de ejemplo" : "",
+        rerender: v => renderSectionPageBody(bodyEl, slug, data, v),
+    });
+}
+
+/** Home card of a section page: header + link, or the chosen layout of `cfg.summaryVariants`. */
+function renderSectionSummary(key, data, variantOverride) {
+    const cfg = SECTION_PAGES[key];
+    const { section, items } = data;
+    const sec = document.getElementById(key) || document.createElement('section');
+    sec.id = key;
+    const link = `<a href="${buildDetailUrl("sections", key)}" class="section-summary-link">${cfg.linkText}</a>`;
+    const switcherKey = `${key}_portada`;
+    const variantKey = cfg.summaryVariants
+        ? variantOverride || resolveSectionVariant(switcherKey, cfg.summaryVariants, cfg.summaryFallback) : "";
+    sec.className = variantKey ? `${key}-summary--${variantKey}` : "";
     sec.innerHTML = `
         <div class="container section-summary">
-            ${section.title ? `<h2 class="text-shadow">${section.title}</h2>` : ""}
-            ${section.subtitle ? `<h3>${section.subtitle}</h3>` : ""}
-            ${section.text ? `<p>${section.text}</p>` : ""}
-            <a href="${buildDetailUrl("sections", slug)}" class="section-summary-link">Ver historia completa</a>
+            ${variantKey ? cfg.summaryVariants[variantKey].build(section, items, link) : summaryHeader(section) + link}
         </div>
     `;
     if (section.background) sec.style.backgroundColor = section.background;
     if (section.font) sec.style.color = section.font;
     if (!document.getElementById(sec.id)) document.body.append(sec);
+    sec.querySelectorAll(".text-shadow").forEach(applyTextShadow);
+    if (variantKey) {
+        window.mountVariantSwitcher?.(sec, {
+            key: switcherKey, variants: cfg.summaryVariants, current: variantKey,
+            note: data.demo ? "contenido de ejemplo" : "",
+            rerender: v => renderSectionSummary(key, data, v),
+        });
+    }
 }
 
 function renderSections() {
@@ -1485,8 +1870,10 @@ function renderSections() {
     const idi = database.sections.find(s => s.id === "#i+d+i");
     if (idi) renderIdi(idi);
 
-    const roadmap = database.sections.find(s => s.id === "#roadmap");
-    if (roadmap && roadmap.page && database.roadmap) renderSectionSummary(roadmap);
+    for (const [key, cfg] of Object.entries(SECTION_PAGES)) {
+        const data = getSectionPageData(key);
+        if (data && data.section.page) renderSectionSummary(key, data);
+    }
 
     const contactData = database.sections.find(s => s.id === "#contact");
     if (contactData) renderContact(contactData);
@@ -1721,12 +2108,12 @@ function renderDetailPage(collection, slug) {
 
 function renderSectionDetailPage(slug) {
     renderMenu();
-    const section = database.sections?.find(s => s.id === `#${slug}`);
-    const items = database[slug];
+    const cfg = SECTION_PAGES[slug];
+    const data = cfg ? getSectionPageData(slug) : null;
     const main = document.createElement("section");
     main.id = "section-detail";
     main.role = "main";
-    if (!section || !Array.isArray(items)) {
+    if (!data) {
         main.innerHTML = `
             <div class="container">
                 <h2>Contenido no encontrado</h2>
@@ -1737,32 +2124,23 @@ function renderSectionDetailPage(slug) {
         document.body.appendChild(main);
         return;
     }
-    document.title = `${section.title} · Insectaria`;
+    const { section, items } = data;
+    document.title = hasValue(section.title) ? `${section.title} · Insectaria` : "Insectaria";
+    main.classList.add(`section-page-${slug}`);
     main.style.background = section.background || "";
     main.style.color = section.font || "";
     main.classList.add("detail-page");
     main.innerHTML = `
         <div class="container">
             <a href="${getBasePath()}${getGidSuffix()}" class="back-link">🠈 Volver</a>
-            <h1 class="text-shadow">${section.title}</h1>
-            ${section.subtitle ? `<h2>${section.subtitle}</h2>` : ""}
-            ${section.text ? `<p>${section.text}</p>` : ""}
-            <div class="timeline">
-                ${items.map((item, i) => `
-                    <div class="timeline-item ${i % 2 === 0 ? 'left' : 'right'}">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-date">${item.date}</div>
-                        <div class="timeline-content">
-                            ${item.image ? `<img src="${resolveAsset(item.image)}" alt="${item.title}" class="timeline-image">` : ""}
-                            <h3>${item.title}</h3>
-                            <p>${item.text}</p>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
+            ${hasValue(section.title) ? `<h1 class="text-shadow">${section.title}</h1>` : ""}
+            ${hasValue(section.subtitle) ? `<h2>${section.subtitle}</h2>` : ""}
+            ${hasValue(section.text) ? `<p>${section.text}</p>` : ""}
+            <div class="section-page-body"></div>
         </div>
     `;
     document.body.appendChild(main);
+    renderSectionPageBody(main.querySelector(".section-page-body"), slug, data);
     const footerData = database.sections?.find(s => s.id === "#footer");
     if (footerData && database.footer) renderFooter(footerData);
     renderModal();

@@ -1,4 +1,9 @@
-const HASH = "a6dc4df7ba0a4753960e05e01b8b7ab4e08d180cb2e35d273d670d652bd7f67a";
+// Allowed Sheets: sha256(Sheet ID) → environment label. Pre holds only what is ready to go to
+// prod; dev holds future changes to preview without touching pre. Both export the same ZIP (💾).
+const SHEET_ENVS = {
+    "a6dc4df7ba0a4753960e05e01b8b7ab4e08d180cb2e35d273d670d652bd7f67a": "Prototipo de preproducción",
+    "1029226337d17ec1f4368aee5d27d6b1d48447bcd30915e2dcdf3fbfffbc5f25": "Prototipo de desarrollo",
+};
 
 async function sha256(message) {
     const msgBuffer = new TextEncoder().encode(message);
@@ -9,8 +14,9 @@ async function sha256(message) {
 
 async function buildDataStructure() {
     let ds = null;
-    const hash2 = await sha256(window.APP_GID);
-    if(hash2 == HASH){
+    const env = SHEET_ENVS[await sha256(window.APP_GID)];
+    if(env){
+        window.APP_ENV = env;
         const configRows = await fetchGoogleSheetsCSVAsJson(window.APP_GID);
         ds = {
             gid: window.APP_GID
@@ -91,7 +97,7 @@ async function loadDataSheet() {
     const ds = await buildDataStructure();
     if(ds){
         try {
-            const [a, b, c, d, e, f, g, h, i, j, k, l] = await Promise.all([
+            const [a, b, c, d, e, f, g, h, i, j, k, l, m] = await Promise.all([
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.menu.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.sections.gid),
                 fetchGoogleSheetsCSVAsJson(ds.gid, ds.services.gid),
@@ -106,8 +112,10 @@ async function loadDataSheet() {
                 ds.config ? fetchGoogleSheetsCSVAsJson(ds.gid, ds.config.gid) : Promise.resolve([]),
                 // Optional tab: without a "topics" row the prototype shows sample topics (TOPICS_DEMO)
                 ds.topics ? fetchGoogleSheetsCSVAsJson(ds.gid, ds.topics.gid) : Promise.resolve([]),
+                // Optional tab: without a "team" row the prototype shows sample people (TEAM_DEMO)
+                ds.team ? fetchGoogleSheetsCSVAsJson(ds.gid, ds.team.gid) : Promise.resolve([]),
             ]);
-            parseData(a, b, c, d, e, f, g, h, i, j, k, l);
+            parseData(a, b, c, d, e, f, g, h, i, j, k, l, m);
             createToolsButton();
         } catch (e) {
             console.error("Error cargando base de datos:", e);
@@ -126,8 +134,14 @@ const CONFIG_DEFAULTS = {
     topics_variant: "",
     // Hero layout (clasico, banner, banner divisor, banner centrado); empty → clasico
     hero_variant: "",
+    // Layout of the roadmap page (alterna, lateral, horizontal, pasos, diapositivas); empty → alterna
+    roadmap_variant: "",
+    // Layout of the roadmap card on the home page (boton, avance, dividido); empty → boton
+    roadmap_portada_variant: "",
+    // Layout of the team page (tarjetas, retratos, lista, compacto, pestañas); empty → tarjetas
+    team_variant: "",
     // Seconds between hero background images (Fondo with several lines)
-    hero_interval: 4,
+    hero_interval: 5,
 };
 
 const CONFIG_TYPES = {
@@ -182,7 +196,10 @@ function parseConfig(rows) {
     return config;
 }
 
-function parseData(menu, sections, services, predators, methodology, projects, idi, footer, crops, roadmap, config = [], topics = []) {
+function parseData(menu, sections, services, predators, methodology, projects, idi, footer, crops, roadmap, config = [], topics = [], team = []) {
+    // Every section key in the Sheet, enabled or not (kept out of appData so 💾 never exports it):
+    // lets a disabled row hide its section instead of falling back to sample content.
+    window.SHEET_SECTION_KEYS = sections.map(x => String(x["Clave"] ?? "").trim());
     window.appData = {
         config: parseConfig(config),
         topics: topics
@@ -309,6 +326,17 @@ function parseData(menu, sections, services, predators, methodology, projects, i
                 text: x["Texto"] || x["Descripción"] || x["Descripcion"] || "",
                 image: x["Imagen"]
             })),
+        team: team
+            .filter(x => isEnabled(x["Habilitado"]))
+            .map(x => ({
+                enabled: x["Habilitado"],
+                name: x["Nombre"] ?? "",
+                group: x["Grupo"] ?? "",
+                role: x["Cargo"] ?? "",
+                text: x["Texto"] ?? "",
+                image: x["Imagen"] ?? "",
+                link: x["Enlace"] ?? "",
+            })),
         footer: footer
             .filter(x => isEnabled(x["Habilitado"]))
             .map(x => ({
@@ -389,8 +417,9 @@ function assignCollectionIds(collection, items) {
 // Prototype tools: floating 🛠️ button (bottom-left, shown on hover) with a menu of actions.
 const SWITCHERS_HIDDEN_KEY = "insectaria_hide_variant_switchers";
 
+// Hidden by default: only an explicit "Mostrar" from the 🛠️ menu (stored "0") shows them.
 function areSwitchersHidden() {
-    try { return localStorage.getItem(SWITCHERS_HIDDEN_KEY) === "1"; } catch (_e) { return false; }
+    try { return localStorage.getItem(SWITCHERS_HIDDEN_KEY) !== "0"; } catch (_e) { return true; }
 }
 
 function setSwitchersHidden(hidden) {
@@ -406,7 +435,7 @@ function createToolsButton() {
             <button type="button" data-action="save">💾 Guardar (exportar ZIP)</button>
             <button type="button" data-action="switchers"></button>
         </div>
-        <button type="button" class="proto-tools-toggle" title="Herramientas del prototipo">🛠️</button>`;
+        <button type="button" class="proto-tools-toggle" title="Herramientas del prototipo (${window.APP_ENV || ""})">🛠️</button>`;
     const menu = container.querySelector(".proto-tools-menu");
     const switchersItem = container.querySelector('[data-action="switchers"]');
     const refreshLabels = () => {
@@ -652,7 +681,7 @@ function generateSectionStaticHTML(section) {
 loadDataSheet();
 
 const prototypeModal = () => modal(
-    "Prototipo",
+    window.APP_ENV || "Prototipo",
     "<p><strong>Entorno de prototipado</strong></p>\
      <p> \
          Esta aplicación se encuentra en fase de validación funcional. \
@@ -859,6 +888,30 @@ window.TOPICS_DEMO = {
             text: "Jornadas y cursos sobre manejo integrado, identificación de plagas y uso de fauna auxiliar.\nFormación a medida para cooperativas y equipos técnicos.",
             image: "",
         },
+    ],
+};
+
+// ============================================================
+//  Página de equipo (#team) — contenido de ejemplo solo en prototipo, mientras el Sheet no tenga
+//  la fila "#team" en sections (con Pagina = si) ni la pestaña "team". No entra en appData, así
+//  que el 💾 nunca lo exporta.
+// ============================================================
+
+window.TEAM_DEMO = {
+    section: {
+        id: "#team",
+        page: true,
+        title: "EQUIPO",
+        subtitle: "LAS PERSONAS DETRÁS DE INSECTARIA",
+        text: "Contenido de ejemplo: crea la pestaña «team» y la fila «#team» (Pagina = si) en sections para sustituirlo.",
+    },
+    items: [
+        { name: "Nombre Apellido", group: "Equipo", role: "Dirección técnica", text: "Ingeniera agrónoma especializada en control biológico.", image: "", link: "" },
+        { name: "Otro Nombre", group: "Equipo", role: "Técnico de campo", text: "Seguimiento de parcelas y sueltas de fauna auxiliar.", image: "", link: "" },
+        { name: "Persona Ejemplo", group: "Equipo", role: "Laboratorio", text: "Cría e identificación de insectos.", image: "", link: "" },
+        { name: "Becaria Ejemplo", group: "Becarios", role: "Prácticas de máster", text: "Ensayo de eficacia en frutales.", image: "", link: "" },
+        { name: "Becario Ejemplo", group: "Becarios", role: "Prácticas de grado", text: "", image: "", link: "" },
+        { name: "Colaborador Ejemplo", group: "Colaboradores", role: "Universidad · Grupo de entomología", text: "", image: "", link: "https://example.com" },
     ],
 };
 
